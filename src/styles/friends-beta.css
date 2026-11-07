@@ -10,3 +10,5 @@
 .tipCard{position:fixed;top:96px;right:24px;max-width:340px;z-index:50;padding:14px 16px;border-radius:12px;background:#162327f2;border:1px solid #e8c17c88;box-shadow:0 12px 32px #0007;font-size:14px;line-height:1.45}
 .tipCard b{color:#ffe1a9;font-size:15px}
 .tipCard p{margin:6px 0 10px}
+/* Opaque empty charm slots: the backdrop moon used to show through at 1440×1000. */
+.jx-joker.emptyslot{background:rgba(16,26,29,.92)}

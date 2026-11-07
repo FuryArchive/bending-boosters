@@ -164,7 +164,9 @@ export function createBackdrop(visible, isReduced) {
     const sky=bg.createLinearGradient(0,0,0,H2);sky.addColorStop(0,T.sky);sky.addColorStop(1,T.horizon);
     bg.fillStyle=sky;bg.fillRect(0,0,W,H2);
     // The moon and distant ridge deliberately live at the margins of the play surface.
-    bg.globalAlpha=.22;bg.fillStyle=T.moon;bg.beginPath();bg.arc(W*.88,H2*.25,Math.min(64,W*.07),0,Math.PI*2);bg.fill();bg.globalAlpha=1;
+    // Only where the window is wider than the 1440px page, so it never shows through the HUD.
+    const mr=Math.min(64,W*.07), mx=(W+Math.min(W,1440))/2+mr+24;
+    if(mx+mr<=W){bg.globalAlpha=.22;bg.fillStyle=T.moon;bg.beginPath();bg.arc(mx,H2*.25,mr,0,Math.PI*2);bg.fill();bg.globalAlpha=1;}
     function ridge(points,color){bg.fillStyle=color;bg.beginPath();bg.moveTo(0,H2);for(const [x,y] of points)bg.lineTo(x*W,y*H2);bg.lineTo(W,H2);bg.closePath();bg.fill()}
     ridge([[0,.62],[.06,.57],[.15,.66],[.26,.43],[.34,.57],[.42,.51],[.52,.71],[.64,.58],[.7,.65],[.81,.40],[.87,.55],[.94,.47],[1,.62]],T.far);
     ridge([[0,.78],[.07,.70],[.14,.74],[.25,.88],[.37,.73],[.48,.84],[.61,.78],[.7,.88],[.83,.67],[.94,.74],[1,.66]],T.near);

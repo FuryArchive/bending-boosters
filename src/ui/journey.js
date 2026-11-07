@@ -305,7 +305,7 @@ export function mountJourney(root, legacy) {
   }
   function jokerRow(r, sell, empties = true) {
     const tiles = r.jokers.map((j, i) => jokerTile(j.id, sell ? `data-sell="${i}"` : "", { cls: "slot" + (sell ? " pick sellable" : ""), state: r.jstate, stars: j.stars }));
-    if (empties) for (let i = r.jokers.length; i < 5; i++) tiles.push('<div class="jx-joker emptyslot">Empty Joker slot</div>');
+    if (empties) for (let i = r.jokers.length; i < 5; i++) tiles.push('<div class="jx-joker emptyslot">Empty charm slot</div>');
     else if (!tiles.length) tiles.push('<div class="note">No Legends or Charms yet.</div>');
     return tiles.join("");
   }
