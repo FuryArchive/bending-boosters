@@ -88,12 +88,14 @@
             "src/ui/fx.js",
             "src/economy/clock.js",
             "src/economy/daily.js",
+            "src/save/migrate.js",
             "src/ui/journey.js"
           ]
         }
       }
     ],
-    "journey-recovery": [
+    "boot": [
+      "src/boot.js",
       "src/journey-recovery.js"
     ]
   }

@@ -9,7 +9,7 @@ A browser game in one self-contained HTML file, built from the source in `src/`.
 
 The original source files were lost. On 2026-11-07, `src/` was recovered from the shipped game, `~/Desktop/bending-boosters(4).html` (SHA-256 `433b99c5…e0d0ce`), by `tools/extract.mjs`.
 
-Running `npm run build` reproduces that file **byte for byte**. All four existing test suites pass against the rebuilt file: 46 combat tests, 47 progression tests, 12 browser scenario groups and 10 visual/input groups.
+At recovery, `npm run build` reproduced that file **byte for byte**, and all four existing test suites passed against it (46 combat tests, 47 progression tests, 12 browser scenario groups, 10 visual/input groups). That exact state is git tag `recovered-baseline`: `git checkout recovered-baseline && node tools/build.mjs --check history/3-visual-edition.html`. Later commits change the game on purpose.
 
 The Journey code had been bundled with esbuild, and each module's original path survived in the bundle. Those modules were restored as real ES modules at their original paths (`src/engine/cards.js`, etc.), with their imports and exports recomputed by scope analysis. They load natively in Node, and esbuild can bundle them. The pack simulator was never modular: it was one inline script. It is now split into ordered files along its own section headers.
 
