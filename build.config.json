@@ -90,6 +90,7 @@
             "src/ui/fx.js",
             "src/economy/clock.js",
             "src/economy/daily.js",
+            "src/economy/selling.js",
             "src/save/migrate.js",
             "src/ui/journey.js"
           ]

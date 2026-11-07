@@ -40,7 +40,8 @@ function renderCollection(){
   if(so==='price') list=list.slice().sort((a,b)=>priceOf(b,false)-priceOf(a,false));
   if(so==='count') list=list.slice().sort((a,b)=>((S.coll[cardKey(b)]||0)+(S.foil[cardKey(b)]||0))-((S.coll[cardKey(a)]||0)+(S.foil[cardKey(a)]||0)));
   const dv=dupesIn(null).reduce((s,x)=>s+x.n*sellPrice(x.c,x.foil),0);
-  document.getElementById('sellAll').textContent=`Sell all extras (keep ${S.settings.keep}) · ${$$(dv)}`;
+  document.getElementById('sellAll').textContent=`Sell all extras (keep ${S.settings.keep}, Journey cards ${S.settings.keepJourney??12}) · ${$$(dv)}`;
+  document.getElementById('sellWarn').textContent='';
   document.getElementById('sellAll').disabled=dv<=0;
   current=list.map(c=>({c,foil:false}));
   document.getElementById('colGrid').innerHTML=list.map((c,i)=>{
@@ -53,6 +54,10 @@ function renderCollection(){
 let sellArmed=false;
 document.getElementById('sellAll').onclick=()=>{
   const b=document.getElementById('sellAll');
-  if(!sellArmed){ sellArmed=true; b.textContent='Click again to confirm'; setTimeout(()=>{ if(sellArmed){sellArmed=false; renderCollection();} },3000); return; }
+  if(!sellArmed){
+    const {entries,plan}=sellExtrasPlan(null), drops=BBJ.starDrops(entries,plan);
+    sellArmed=true; b.textContent='Click again to confirm';
+    document.getElementById('sellWarn').textContent=drops.length?'Journey stars drop: '+drops.map(d=>`${d.name} ★${d.from} → ★${d.to}`).join(', '):'';
+    setTimeout(()=>{ if(sellArmed){sellArmed=false; renderCollection();} },3000); return; }
   sellArmed=false; const r=sellList(dupesIn(null)); toast(`Sold ${r.n.toLocaleString()} cards for ${$$(r.v)}`); renderCollection();
 };

@@ -2,12 +2,12 @@
 const $=id=>document.getElementById(id);
 function renderSettings(){
   const s=S.settings;
-  $('sPrice').value=s.price; $('sBox').value=s.boxPrice; $('sBuy').value=s.buy; $('sKeep').value=s.keep; $('sPity').value=s.pity; $('sHints').checked=s.hints; $('sReal').checked=s.real; $('sSound').checked=s.sound; $('sFast').checked=s.fast; $('sSeed').value=s.seed||''; $('sStart').value=s.start;
+  $('sPrice').value=s.price; $('sBox').value=s.boxPrice; $('sBuy').value=s.buy; $('sKeep').value=s.keep; $('sKeepJourney').value=s.keepJourney??12; $('sPity').value=s.pity; $('sHints').checked=s.hints; $('sReal').checked=s.real; $('sSound').checked=s.sound; $('sFast').checked=s.fast; $('sSeed').value=s.seed||''; $('sStart').value=s.start;
   imgStatus();
 }
 $('saveSettings').onclick=()=>{
   const s=S.settings; const wasReal=s.real;
-  s.price=Math.max(.5,+$('sPrice').value||6.99); s.boxPrice=Math.max(1,+$('sBox').value||149.99); s.buy=Math.min(100,Math.max(1,parseInt($('sBuy').value)||60)); s.keep=Math.max(0,parseInt($('sKeep').value)||0);
+  s.price=Math.max(.5,+$('sPrice').value||6.99); s.boxPrice=Math.max(1,+$('sBox').value||149.99); s.buy=Math.min(100,Math.max(1,parseInt($('sBuy').value)||60)); s.keep=Math.max(0,parseInt($('sKeep').value)||0); const kj=parseInt($('sKeepJourney').value); s.keepJourney=Number.isFinite(kj)?Math.max(0,kj):12;
   s.pity=Math.max(0,parseInt($('sPity').value)||0); s.hints=$('sHints').checked; s.real=$('sReal').checked; s.sound=$('sSound').checked; s.fast=$('sFast').checked; s.start=Math.max(0,+$('sStart').value||0);
   save(); refreshHeader(); toast('Settings saved');
   if(s.real&&!wasReal) loadImgIndex(); imgStatus(); renderLast();

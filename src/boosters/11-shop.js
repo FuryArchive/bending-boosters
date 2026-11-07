@@ -9,14 +9,17 @@ function openShop(msg){
   document.getElementById('modal').classList.add('on');
 }
 /* ---------- selling ---------- */
-function dupesIn(list){ // extra copies beyond the keep setting, for cards appearing in list (or whole collection if list null)
-  const keep=S.settings.keep; const keys=new Set(); const out=[];
-  (list||[]).forEach(p=>keys.add(cardKey(p.c)));
-  if(!list){ Object.keys(S.coll).forEach(k=>keys.add(k)); Object.keys(S.foil).forEach(k=>keys.add(k)); }
-  keys.forEach(k=>{ const c=findCard(k); if(!c) return; let reg=S.coll[k]||0, fo=S.foil[k]||0; let extra=reg+fo-keep; if(extra<=0) return;
-    const sr=Math.min(extra,reg); if(sr) out.push({c,k,foil:false,n:sr}); extra-=sr; if(extra>0) out.push({c,k,foil:true,n:extra}); });
-  return out;
+function sellExtrasPlan(list){ // extras for the names in list (whole collection if list null); Journey names keep their stars
+  const keys=new Set();
+  if(list) list.forEach(p=>{ keys.add(cardKey(p.c)); (NAME_KEYS[p.c.name]||[]).forEach(k=>keys.add(k)); });
+  else { Object.keys(S.coll).forEach(k=>keys.add(k)); Object.keys(S.foil).forEach(k=>keys.add(k)); }
+  const entries=[], cards={};
+  keys.forEach(k=>{ const c=findCard(k); if(!c) return; const reg=S.coll[k]||0, fo=S.foil[k]||0; if(!reg&&!fo) return; cards[k]=c;
+    entries.push({key:k,name:c.name,journey:BBJ.isRunCard(c),reg,foil:fo,regValue:sellPrice(c,false),foilValue:sellPrice(c,true)}); });
+  const plan=BBJ.planSellExtras(entries,{keep:S.settings.keep,keepJourney:S.settings.keepJourney??BBJ.ECONOMY.keepJourneyDefault});
+  return {entries,plan,items:plan.map(p=>({c:cards[p.key],k:p.key,foil:p.foil,n:p.n}))};
 }
+function dupesIn(list){ return sellExtrasPlan(list).items; }
 function sellList(items){
   let n=0,v=0;
   items.forEach(x=>{ const bag=x.foil?S.foil:S.coll; const have=bag[x.k]||0; const q=Math.min(have,x.n); if(!q) return;

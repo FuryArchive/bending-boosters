@@ -118,6 +118,25 @@ async function group(name, fn) {
       await ctx.close();
     });
 
+    await group('star-protected selling', async () => {
+      const { page, ctx } = await fresh();
+      const keys = await page.evaluate(() => {
+        const jc = BASE.find((c) => BBJ.isRunCard(c) && c.r === 'C' && (NAME_KEYS[c.name] || []).length === 1);
+        const land = BASE.find((c) => c.r === 'L');
+        const jk = cardKey(jc), lk = cardKey(land);
+        S.coll = { [jk]: 14, [lk]: 9 }; S.foil = {}; save(); showView('collection');
+        return { jk, lk };
+      });
+      await page.locator('#sellAll').click();
+      await page.locator('#sellAll').click();
+      assert.deepEqual(await page.evaluate((k) => [S.coll[k.jk], S.coll[k.lk]], keys), [12, 4]);
+      await page.evaluate((k) => { S.settings.keepJourney = 4; S.coll[k.jk] = 12; save(); renderCollection(); }, keys);
+      await page.locator('#sellAll').click();
+      assert.match(await page.locator('#sellWarn').innerText(), /★5 → ★3/);
+      assert.equal(await page.evaluate((k) => S.coll[k.jk], keys), 12); // first click only warns
+      await ctx.close();
+    });
+
     assert.deepEqual(errors, []);
     console.log(`ALL FRIENDS-BETA CHECKS PASSED (${groups} groups; no page errors)`);
   } finally {

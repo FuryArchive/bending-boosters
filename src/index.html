@@ -87,7 +87,7 @@
       <input type="search" id="fq" placeholder="Search name…">
       <select id="fSort"><option value="num">Sort: set number</option><option value="price">Sort: price</option><option value="count">Sort: copies owned</option></select>
       <span style="flex:1"></span>
-      <button class="btn" id="sellAll">Sell all extras</button>
+      <button class="btn" id="sellAll">Sell all extras</button><span class="h sellWarn" id="sellWarn"></span>
     </div>
     <div class="colGrid" id="colGrid"></div>
   </section>
@@ -176,6 +176,7 @@
         <div class="field"><label>Sell rate (% of market)</label><input type="number" id="sBuy" min="1" max="100"><span class="h">Stores typically pay 50–70% of market.</span></div>
         </div>
         <div class="field"><label>Copies to keep when selling extras</label><input type="number" id="sKeep" min="0" max="20"></div>
+        <div class="field"><label>Copies of Journey cards to keep</label><input type="number" id="sKeepJourney" min="0" max="20"><span class="h">12 copies keep a card at ★5 in the Journey. Lower it and Sell all extras warns which cards lose stars.</span></div>
         <div class="field"><label>Mythic pity (packs)</label><input type="number" id="sPity" min="0"><span class="h">Guarantees a mythic in the rare slot after this many packs without one. 0 = off (faithful paper odds).</span></div>
         <button class="btn primary" id="saveSettings">Save settings</button>
       </div>

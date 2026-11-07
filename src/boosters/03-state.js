@@ -1,5 +1,5 @@
 /* ================= State ================= */
-const DEFAULTS={real:true,sound:true,fast:false,price:6.99,boxPrice:149.99,buy:60,keep:4,pity:0,hints:true,auto:false,start:50,seed:''};
+const DEFAULTS={real:true,sound:true,fast:false,price:6.99,boxPrice:149.99,buy:60,keep:4,keepJourney:12,pity:0,hints:true,auto:false,start:50,seed:''};
 let S;
 function freshState(settings){
   const st={v:3,...BBJ.freshMainFields(),money:+(settings||DEFAULTS).start,deposited:+(settings||DEFAULTS).start,packSpend:0,valuePulled:0,soldIncome:0,sold:0,best:null,valHist:[],bt:{w:0,l:0,earned:0},spent:0,coll:{},foil:{},packs:0,cards:0,since:0,maxDry:0,drySpans:[],
