@@ -57,6 +57,7 @@ import {
   wipe,
 } from "./fx.js";
 import { RUN_KEY } from "./run-store.js";
+import { showTip } from "./tips.js";
 
 var ELEM_COLOR = { Air: "#f2c46d", Water: "#5aa7e0", Fire: "#e8543a", Earth: "#6fa356", Spirit: "#9a7bd1", Neutral: "#b9ab95" };
 var GLYPH = {
@@ -224,6 +225,7 @@ export function mountJourney(root, legacy) {
     sfx.page();
   }
   function renderStart() {
+    showTip("journey-start");
     st.screen = "start";
     const saved = loadSave();
     if (saved && (saved.status === "lost" || saved.status === "won")) {
@@ -399,6 +401,7 @@ export function mountJourney(root, legacy) {
     root.appendChild(o);
   }
   function renderMap() {
+    showTip("map");
     st.screen = "map";
     const r = st.run, map = currentMap(r), availList = availableNodes(r), avail = new Set(availList.map((n) => n.id)), path = new Set(r.path);
     const W = 540, RH = 76, H2 = 15 * RH + 70, X = (c) => 90 + c * 125, Y = (f) => H2 - 56 - (f - 1) * RH;
@@ -485,6 +488,7 @@ export function mountJourney(root, legacy) {
     return `<div class="jx-dcard pick" ${attr}="${i}">${cardFace(rc)}</div>`;
   }).join("")}</div>`;
   function renderNode() {
+    if (st.run && st.run.pending && ["shop", "rest", "event"].includes(st.run.pending.kind)) showTip(st.run.pending.kind);
     const r = st.run, p = r.pending;
     if (!p) {
       leaveNode(r);
@@ -842,6 +846,7 @@ export function mountJourney(root, legacy) {
     ${e.armor ? `<g transform="translate(92 92)"><path d="M0-14 12-8v8c0 8-6 13-12 16C-6 13-12 8-12 0v-8z" fill="#c9c2b6" stroke="#333"/><text y="5" text-anchor="middle" font-size="12" font-weight="900" fill="#222">${e.armor}</text></g>` : ""}</svg>`;
   }
   function renderFight(dealIn) {
+    showTip("fight");
     st.screen = "fight";
     st.busy = false;
     st.focus = null;
@@ -1305,6 +1310,7 @@ export function mountJourney(root, legacy) {
     }
   }
   async function onPlayCard(i, mode) {
+    showTip("flow");
     if (st.busy || st.screen !== "fight") return;
     const run = st.run, f = st.f, c = f.hand[i];
     if (!c) return;

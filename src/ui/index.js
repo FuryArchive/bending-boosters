@@ -7,6 +7,7 @@ export { planSellExtras, starDrops } from "../economy/selling.js";
 export { isRunCard } from "../engine/catalog.js";
 export { runBrief } from "../engine/run.js";
 export { readSavedRun } from "./run-store.js";
+export { initTips, resetTips, showTip } from "./tips.js";
 export { MAIN_SAVE_VERSION, freshMainFields, migrateMain } from "../save/migrate.js";
 export { exportSave, importSave, parseSaveFile } from "../save/savefile.js";
 export var version = "m1";

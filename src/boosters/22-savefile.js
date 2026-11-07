@@ -1,5 +1,6 @@
 /* ================= Save file ================= */
 // Export/import of the whole save (wallet, collection, settings, active run) as one JSON file.
+document.getElementById('resetTips').onclick=()=>{ BBJ.resetTips(); toast('Tips will show again'); };
 document.getElementById('exportSave').onclick=()=>{
   const file=BBJ.exportSave(localStorage);
   const url=URL.createObjectURL(new Blob([JSON.stringify(file)],{type:'application/json'}));

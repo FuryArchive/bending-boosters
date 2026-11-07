@@ -96,6 +96,8 @@
             "src/save/migrate.js",
             "src/save/crc32.js",
             "src/save/savefile.js",
+            "src/meta/tips.js",
+            "src/ui/tips.js",
             "src/ui/run-store.js",
             "src/ui/journey.js"
           ]

@@ -71,6 +71,7 @@ function cancelOpening(){
   document.getElementById('flash').classList.remove('go');
 }
 function stageOpen(packs){
+  BBJ.showTip('reveal');
   cancelOpening();
   document.getElementById('stSkip').disabled=false;
   document.body.classList.add('lock'); stage.classList.add('on');

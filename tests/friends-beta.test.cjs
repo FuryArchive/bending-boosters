@@ -190,6 +190,36 @@ async function group(name, fn) {
       await ctx.close();
     });
 
+    await group('tips', async () => {
+      const { page, ctx } = await fresh({ debug: false });
+      await page.locator('#tipCard').waitFor({ state: 'visible' });
+      assert.match(await page.locator('#tipCard').innerText(), /Open your first packs/);
+      await page.locator('#tipOk').click();
+      assert.equal(await page.locator('#tipCard').isVisible(), false);
+      await page.reload();
+      await page.waitForTimeout(300);
+      assert.equal(await page.locator('#tipCard').isVisible(), false);
+      await page.evaluate(() => showView('settings'));
+      await page.locator('#resetTips').click();
+      await page.evaluate(() => showView('open'));
+      await page.locator('#tipCard').waitFor({ state: 'visible' });
+      await ctx.close();
+
+      const dbg = await fresh();
+      await dbg.page.waitForTimeout(300);
+      assert.equal(await dbg.page.locator('#tipCard').isVisible(), false); // debug hides tips
+      await dbg.page.evaluate(() => {
+        S.settings.debugTips = true; S.tips = { packs: true, 'journey-start': true, map: true }; save();
+        showView('journey'); BBJ._newRun('TIPS', 'water'); BBJ._debugGoto('fight');
+      });
+      await dbg.page.waitForFunction(() => BBJ._state.screen === 'fight' && !BBJ._state.busy);
+      await dbg.page.locator('#tipCard').waitFor({ state: 'visible' });
+      assert.match(await dbg.page.locator('#tipCard').innerText(), /Strike or Guard/);
+      await dbg.page.locator('#jxEnd').click(); // must not be intercepted by the tip
+      await dbg.page.waitForFunction(() => BBJ._debugFight() && BBJ._debugFight().turn === 2);
+      await dbg.ctx.close();
+    });
+
     assert.deepEqual(errors, []);
     console.log(`ALL FRIENDS-BETA CHECKS PASSED (${groups} groups; no page errors)`);
   } finally {
