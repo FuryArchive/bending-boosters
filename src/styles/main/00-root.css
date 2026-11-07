@@ -1,0 +1,42 @@
+:root{
+  --bg:#120f0d; --bg2:#1c1815; --panel:#221d19; --line:#3a322b; --ink:#f5ecdb; --mute:#b9ab95; --dim:#806f5d;
+  --gold:#e8b85a; --air:#f2c46d; --water:#5aa7e0; --fire:#e8543a; --earth:#6fa356; --spirit:#9a7bd1;
+  --C:#cfc6b8; --U:#a9c2d4; --R:#e8c25a; --M:#f07a3a; --S:#c48cff;
+  --cw:190px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Nunito Sans",system-ui,sans-serif;font-size:16px}
+body{min-height:100vh;background:
+  radial-gradient(1400px 700px at 10% -10%, #3d2615 0%, transparent 60%),
+  radial-gradient(1000px 600px at 100% 0%, #13293b 0%, transparent 60%), var(--bg)}
+body.lock{overflow:hidden}
+button{font:inherit;cursor:pointer}
+.wrap{max-width:1500px;margin:0 auto;padding:18px 28px 70px}
+header{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:6px 0 16px;border-bottom:1px solid var(--line)}
+.logo{display:flex;align-items:center;gap:14px}
+.logo h1{font-family:"Marcellus SC",serif;font-weight:400;font-size:32px;margin:0;letter-spacing:.04em}
+.logo small{display:block;color:var(--mute);font-size:13.5px}
+.wallet{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pill{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:9px 16px;font-weight:800;display:flex;gap:8px;align-items:center;font-size:16px}
+.pill .gem{width:15px;height:15px;transform:rotate(45deg);background:linear-gradient(135deg,#9ff0ff,#3b8fe0 60%,#7a4fd8);border-radius:2px;box-shadow:0 0 8px #5ab8ff88}
+.pill.spent{color:var(--mute);font-weight:600}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:12px;padding:10px 16px;font-weight:800;font-size:15px;transition:.15s}
+.btn:hover{border-color:#5a4d40;background:#2c2621}
+.btn.primary{background:linear-gradient(180deg,#f3c96e,#c98d2e);color:#24170a;border-color:#f6d68a}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn small{display:block;font-weight:700;font-size:12px;opacity:.8}
+.iconbtn{width:42px;height:42px;padding:0;display:grid;place-items:center;font-size:18px}
+nav.tabs{display:flex;gap:6px;margin:16px 0 22px;flex-wrap:wrap}
+nav.tabs button{background:none;border:none;color:var(--mute);padding:11px 18px;border-radius:11px;font-weight:800;font-size:16px}
+nav.tabs button.on{background:var(--panel);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+section.view{display:none}
+section.view.on{display:block}
+.panel{background:color-mix(in srgb,var(--panel) 90%,transparent);border:1px solid var(--line);border-radius:16px;padding:20px}
+h2{font-family:"Marcellus",serif;font-weight:400;font-size:25px;margin:0 0 12px}
+h3{font-size:13.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--mute);margin:22px 0 10px}
+.muted{color:var(--mute)} .dim{color:var(--dim)}
+.note{font-size:14px;color:var(--mute);line-height:1.55}
+a{color:#f0c56a}
+

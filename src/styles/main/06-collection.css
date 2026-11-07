@@ -1,0 +1,13 @@
+/* ---------- collection ---------- */
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.chip{border:1px solid var(--line);background:var(--bg2);color:var(--mute);border-radius:999px;padding:7px 13px;font-size:14px;font-weight:800;cursor:pointer}
+.chip.on{color:var(--ink);border-color:#8a7458;background:#3a2f24}
+input[type=search],input[type=number],input[type=text],select{background:var(--bg2);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:9px 12px;font:inherit;font-size:15px}
+.colGrid{--cw:180px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:18px 12px;justify-items:center}
+.owned{position:relative;cursor:pointer}
+.owned.no .card{filter:grayscale(1) brightness(.33);opacity:.75}
+.cnt{position:absolute;top:-7px;right:-7px;background:#1d1916;border:1px solid var(--line);border-radius:999px;font-size:12px;font-weight:900;padding:2px 8px;z-index:9}
+.cnt.f{right:auto;left:-7px;background:linear-gradient(90deg,#ff7ad9,#7af0ff);color:#111;border:none}
+.progress{height:10px;background:var(--bg2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--M))}
+

@@ -1,0 +1,64 @@
+/* ================= palette pass: lacquer colours from the game's own code ================= */
+.jx{
+  --chi1:#43c2b4;--chi2:#17707a;--chi3:#0a343c;--chi-lip:#06232a;--chi-glow:#5ee0cf;      /* Chips: spirit chi, teal lacquer */
+  --cin1:#f07a4a;--cin2:#b8321c;--cin3:#5a1008;--cin-lip:#3a0904;--cin-glow:#ff7a45;      /* Mult / Attack: cinnabar lacquer */
+  --jade1:#7fd39a;--jade2:#2f8a5c;--jade3:#123d29;--jade-lip:#0a2618;                      /* HP: jade */
+  --slate1:#a9bccb;--slate2:#56707f;--slate3:#22313b;--slate-lip:#121c23;--slate-glow:#9fc4dc; /* Block / Guard: metal */
+  --gilt:#d9b96f;--gilt-dim:#d9b96f66;
+  --waves:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='22'%3E%3Cpath d='M0 16c5.5 0 5.5-7 11-7s5.5 7 11 7 5.5-7 11-7 5.5 7 11 7' fill='none' stroke='%23fff' stroke-opacity='.1' stroke-width='2'/%3E%3C/svg%3E");
+}
+/* Chips x Mult tiles: lacquer with gold inlay */
+.jx-tile.chips,.jx-tile.mult{background-image:var(--waves),linear-gradient(180deg,var(--t1),var(--t2) 55%,var(--t3));background-size:44px 22px,auto}
+.jx-tile.chips{--t1:var(--chi1);--t2:var(--chi2);--t3:var(--chi3);box-shadow:inset 0 0 0 1.5px var(--gilt-dim),0 0 0 2px var(--chi-lip),0 6px 0 var(--chi-lip),0 12px 22px #000a}
+.jx-tile.mult{--t1:var(--cin1);--t2:var(--cin2);--t3:var(--cin3);box-shadow:inset 0 0 0 1.5px var(--gilt-dim),0 0 0 2px var(--cin-lip),0 6px 0 var(--cin-lip),0 12px 22px #000a}
+.jx-tile.chips:has(b.bump){box-shadow:inset 0 0 0 1.5px var(--gilt),0 0 0 2px var(--chi-lip),0 6px 0 var(--chi-lip),0 12px 22px #000a,0 0 30px var(--chi-glow)}
+.jx-tile.mult:has(b.bump){box-shadow:inset 0 0 0 1.5px var(--gilt),0 0 0 2px var(--cin-lip),0 6px 0 var(--cin-lip),0 12px 22px #000a,0 0 30px var(--cin-glow)}
+.jx-tile b{text-shadow:0 3px 0 #0008,0 0 12px #ffffff22}
+.jx-tile small{color:#fff3d6;opacity:.85}
+.jx-score.guardmode .jx-tile.chips{--t1:var(--slate1);--t2:var(--slate2);--t3:var(--slate3);box-shadow:inset 0 0 0 1.5px var(--gilt-dim),0 0 0 2px var(--slate-lip),0 6px 0 var(--slate-lip),0 12px 22px #000a}
+.jx-cm .x{color:var(--gilt);text-shadow:0 3px 0 #000,0 0 12px #d9b96f55}
+.jx-score.fire .jx-tile.mult{animation:multHeat .5s ease-in-out infinite alternate}
+@keyframes multHeat{to{box-shadow:inset 0 0 0 1.5px var(--gilt),0 0 0 2px var(--cin-lip),0 6px 0 var(--cin-lip),0 0 36px var(--cin-glow)}}
+
+/* score pops */
+.jx-pop.chips{background:linear-gradient(180deg,var(--chi1),var(--chi2));box-shadow:inset 0 0 0 1px var(--gilt-dim),0 3px 0 var(--chi-lip),0 0 16px #43c2b488;text-shadow:0 1px 0 var(--chi-lip)}
+.jx-pop.mult{background:linear-gradient(180deg,var(--cin1),var(--cin2));box-shadow:inset 0 0 0 1px var(--gilt-dim),0 3px 0 var(--cin-lip),0 0 16px #f07a4a88;text-shadow:0 1px 0 var(--cin-lip)}
+.jx-pop.xmult{background:linear-gradient(180deg,#ffb04a,var(--cin2));border-color:var(--gilt);box-shadow:0 4px 0 var(--cin-lip),0 0 26px var(--cin-glow)}
+.jx-pop.guardpop{background:linear-gradient(180deg,var(--slate1),var(--slate2));box-shadow:inset 0 0 0 1px var(--gilt-dim),0 3px 0 var(--slate-lip),0 0 14px #9fc4dc66;text-shadow:0 1px 0 var(--slate-lip)}
+.jx-pop.heal{background:linear-gradient(180deg,var(--jade1),var(--jade2));box-shadow:inset 0 0 0 1px var(--gilt-dim),0 3px 0 var(--jade-lip);text-shadow:0 1px 0 var(--jade-lip)}
+.jx-pop.effect{background:linear-gradient(180deg,#ffe3a0,#d9a24a);box-shadow:inset 0 0 0 1px #fff6,0 3px 0 #6a4310}
+.jx-mini.chips{background:var(--chi2)}.jx-mini.mult{background:var(--cin2)}
+
+/* card stat plates */
+.jc-chips{background:var(--waves),linear-gradient(180deg,var(--chi1),var(--chi2) 60%,var(--chi3));background-size:30px 15px,auto;box-shadow:inset 0 0 0 1.2px var(--gilt-dim),0 2px 0 var(--chi-lip)}
+.jc-block{background:var(--waves),linear-gradient(180deg,var(--slate1),var(--slate2) 60%,var(--slate3));background-size:30px 15px,auto;box-shadow:inset 0 0 0 1.2px var(--gilt-dim),0 2px 0 var(--slate-lip)}
+.jc-stats span{text-shadow:0 1px 0 #0008}
+
+/* HP bars: jade for you, crimson for enemies, gilt frames */
+.jx-php .jx-phpbar,.jx-hudhp .jx-phpbar{background:#0b0807;border:2px solid #0b0807;box-shadow:0 0 0 1.5px var(--gilt-dim),inset 0 3px 6px #000c}
+.jx-php .jx-phpbar i,.jx-hudhp .jx-phpbar i{background:repeating-linear-gradient(90deg,transparent 0 13px,#0000002e 13px 14px),linear-gradient(180deg,var(--jade1),var(--jade2) 55%,var(--jade3));box-shadow:inset 0 2px 0 #ffffff50}
+.jx-fight.lowhp .jx-php .jx-phpbar i,.jx-hudhp.low .jx-phpbar i{background:repeating-linear-gradient(90deg,transparent 0 13px,#0000002e 13px 14px),linear-gradient(180deg,var(--cin1),var(--cin2) 55%,var(--cin3))}
+.jx-php .heart,.jx-hudhp .ico{color:#ff6a5a;text-shadow:0 2px 0 var(--cin-lip),0 0 14px #ff6a5a77}
+.jx-hpbar{border:2px solid #0b0807;box-shadow:0 0 0 1.5px var(--gilt-dim),0 6px 16px #0008;background:#0b0807}
+.jx-hpbar i.cur{background:linear-gradient(180deg,#e8644a,#9a2216 55%,#4a0a06);box-shadow:inset 0 2px 0 #ffffff40}
+.jx-hpbar i.lag{background:linear-gradient(180deg,#fff1c8,#e8c47a)}
+.jx-enemy.boss .jx-hpbar i.cur{background:linear-gradient(180deg,#f0a24a,#b8521c 55%,#5a1a08)}
+.jx-hpbar::after{background:repeating-linear-gradient(90deg,transparent 0 calc(10% - 1px),#0b0807aa calc(10% - 1px) 10%)}
+
+/* Block shield and Guard: slate metal with gilt edge */
+.jx-block{filter:drop-shadow(0 0 0 var(--gilt)) drop-shadow(0 4px 0 var(--slate-lip)) drop-shadow(0 6px 10px #000a)}
+.jx-block::before{background:var(--waves),linear-gradient(180deg,var(--slate1),var(--slate2) 60%,var(--slate3));background-size:30px 15px,auto}
+.jx-block.has::before{background:var(--waves),linear-gradient(180deg,#c6dcec,#6a8aa0 55%,#2c4252);background-size:30px 15px,auto}
+.jx-block:not(.has){opacity:.75}
+.jx .btn.jx-guard{--b1:var(--slate1);--b2:var(--slate2);--lip:var(--slate-lip);--glow:#9fc4dcaa;background-image:var(--waves),linear-gradient(180deg,var(--b1),var(--b2));background-size:44px 22px,auto;box-shadow:inset 0 0 0 1px var(--gilt-dim),0 5px 0 var(--lip),0 9px 16px #000a,inset 0 1px 0 #ffffff40}
+.jx .btn.jx-play{--b1:var(--cin1);--b2:var(--cin2);--lip:var(--cin-lip);--glow:#f07a4aaa;background-image:var(--waves),linear-gradient(180deg,var(--b1),var(--b2));background-size:44px 22px,auto;box-shadow:inset 0 0 0 1px var(--gilt-dim),0 5px 0 var(--lip),0 9px 16px #000a,inset 0 1px 0 #ffffff40}
+.jx .btn.jx-guard:hover:not(:disabled),.jx .btn.jx-play:hover:not(:disabled){box-shadow:inset 0 0 0 1px var(--gilt),0 7px 0 var(--lip),0 13px 22px #000b,0 0 22px var(--glow),inset 0 1px 0 #ffffff50}
+.jx .btn.jx-guard:active:not(:disabled),.jx .btn.jx-play:active:not(:disabled){box-shadow:inset 0 0 0 1px var(--gilt-dim),0 1px 0 var(--lip),inset 0 3px 7px #0005}
+.jx .btn.jx-disc{--b1:#8a6e52;--b2:#4f3b2a;--lip:#24180f;box-shadow:inset 0 0 0 1px #d9b96f33,0 5px 0 var(--lip),0 9px 16px #000a,inset 0 1px 0 #ffffff30}
+.jx .btn .bv{background:#00000048;box-shadow:inset 0 1px 3px #0008,0 0 0 1px #ffffff14}
+
+/* small accents */
+.jx-joker .jk-prog b{color:var(--cin1)}.jx-joker .jk-bar i{background:linear-gradient(90deg,var(--cin2),var(--cin1))}
+.jx-energy .pip{background:linear-gradient(135deg,#fff3c8,var(--gilt) 45%,#8a6218);box-shadow:0 0 10px #d9b96faa,inset 0 0 0 1px #6a4310}
+.jx-turn{border-color:var(--gilt-dim)}
+

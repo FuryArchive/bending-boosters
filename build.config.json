@@ -1,0 +1,97 @@
+{
+  "template": "src/index.html",
+  "output": "dist/bending-boosters.html",
+  "slots": {
+    "styles": [
+      "src/styles/main/00-root.css",
+      "src/styles/main/01-open-hero.css",
+      "src/styles/main/02-card-grids.css",
+      "src/styles/main/03-flip-card.css",
+      "src/styles/main/04-stage.css",
+      "src/styles/main/05-spotlight.css",
+      "src/styles/main/06-collection.css",
+      "src/styles/main/07-modal.css",
+      "src/styles/main/08-tables-stats.css",
+      "src/styles/main/09-journey.css",
+      "src/styles/main/10-journey-card-face.css",
+      "src/styles/main/11-revision-2.css",
+      "src/styles/main/12-visual-pass.css",
+      "src/styles/main/13-rework.css",
+      "src/styles/main/14-component-pass.css",
+      "src/styles/main/15-palette-pass.css",
+      "src/styles/main/16-flow.css",
+      "src/styles/main/17-decks.css"
+    ],
+    "visual-edition": [
+      "src/styles/visual-edition.css"
+    ],
+    "boosters": [
+      "src/boosters/00-prelude.js",
+      {
+        "const": "DATA",
+        "json": "src/catalog/data.json"
+      },
+      {
+        "const": "DECKS",
+        "json": "src/catalog/decks.json"
+      },
+      {
+        "const": "PRICES",
+        "json": "src/catalog/prices.json"
+      },
+      "src/boosters/01-rng.js",
+      "src/boosters/02-card-pools.js",
+      "src/boosters/03-state.js",
+      "src/boosters/04-art.js",
+      "src/boosters/05-images.js",
+      "src/boosters/06-prices.js",
+      "src/boosters/07-sound.js",
+      "src/boosters/08-card-render.js",
+      "src/boosters/09-opening.js",
+      "src/boosters/10-zoom-modal.js",
+      "src/boosters/11-shop.js",
+      "src/boosters/12-collection.js",
+      "src/boosters/13-odds-model.js",
+      "src/boosters/14-stats.js",
+      "src/boosters/15-header.js",
+      "src/boosters/16-decks.js",
+      "src/boosters/17-journey-mount.js",
+      "src/boosters/18-settings.js",
+      "src/boosters/19-wire-up.js"
+    ],
+    "journey": [
+      {
+        "journey": {
+          "globalName": "BBJ",
+          "entry": "src/ui/index.js",
+          "modules": [
+            "src/data/overrides.js",
+            "src/engine/cards.js",
+            "src/engine/enemy.js",
+            "src/engine/jokers.js",
+            "src/engine/flow.js",
+            "src/engine/catalog.js",
+            "src/engine/rng.js",
+            "src/engine/map.js",
+            "src/engine/pools.js",
+            "src/data/enemies.js",
+            "src/data/jokers.js",
+            "src/engine/offers.js",
+            "src/data/items.js",
+            "src/data/events.js",
+            "src/engine/nodes.js",
+            "src/engine/run.js",
+            "src/ui/cardview.js",
+            "src/ui/anim.js",
+            "src/ui/sfx.js",
+            "src/ui/fx.js",
+            "src/ui/journey.js"
+          ]
+        }
+      }
+    ],
+    "journey-recovery": [
+      "src/journey-recovery.js"
+    ]
+  }
+}

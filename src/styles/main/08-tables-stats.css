@@ -1,0 +1,22 @@
+/* ---------- tables, stats ---------- */
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--mute);font-weight:800;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:980px){.two{grid-template-columns:1fr}}
+.rdot{display:inline-block;width:10px;height:10px;transform:rotate(45deg);margin-right:7px;border-radius:1px}
+.bars{display:flex;flex-direction:column;gap:9px}
+.brow{display:grid;grid-template-columns:120px 1fr 130px;gap:10px;align-items:center;font-size:14px}
+.btrack{position:relative;height:18px;background:var(--bg2);border-radius:5px;border:1px solid var(--line)}
+.btrack i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+.btrack b{position:absolute;top:-3px;bottom:-3px;width:2px;background:#fff}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.field label{font-weight:800;font-size:15px}
+.field .h{font-size:13px;color:var(--mute)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#2c2621;border:1px solid #5a4d40;padding:11px 18px;border-radius:12px;opacity:0;transition:.25s;z-index:80;font-weight:800;font-size:15px}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.histList{max-height:460px;overflow:auto}
+.sumTiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px}
+

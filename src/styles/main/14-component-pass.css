@@ -1,0 +1,108 @@
+/* ================= component pass: buttons, counters, gauges ================= */
+/* buttons: chunky, lipped, press down */
+.jx .btn{--b1:#4a3d32;--b2:#2a221c;--lip:#140f0b;--glow:transparent;position:relative;border:1px solid #ffffff1c;border-radius:13px;padding:11px 18px;font:900 15px/1.1 "Nunito Sans",system-ui,sans-serif;color:var(--ink);
+  background:linear-gradient(180deg,var(--b1),var(--b2));box-shadow:0 5px 0 var(--lip),0 9px 16px #000a,inset 0 1px 0 #ffffff30,inset 0 -2px 0 #00000030;transform:translateY(0);transition:transform .11s ease,box-shadow .11s ease,filter .15s}
+.jx .btn:hover:not(:disabled){filter:brightness(1.12);transform:translateY(-2px);box-shadow:0 7px 0 var(--lip),0 13px 22px #000b,0 0 20px var(--glow),inset 0 1px 0 #ffffff44,inset 0 -2px 0 #00000030}
+.jx .btn:active:not(:disabled){transform:translateY(4px);box-shadow:0 1px 0 var(--lip),0 3px 8px #000a,inset 0 1px 0 #ffffff1c,inset 0 3px 7px #0005}
+.jx .btn:disabled{filter:grayscale(.75) brightness(.6);transform:translateY(3px);box-shadow:0 2px 0 var(--lip),inset 0 1px 0 #ffffff12;cursor:not-allowed}
+.jx .btn.primary{--b1:#ffdd88;--b2:#dc9a34;--lip:#7c5013;--glow:#f2c46d99;color:#2b1803;text-shadow:0 1px 0 #ffffff70;border-color:#fff0c0aa}
+.jx .btn.quiet{background:transparent;box-shadow:none;border-color:transparent;color:var(--mute);transform:none}
+.jx .btn.quiet:hover:not(:disabled){box-shadow:none;color:var(--ink);transform:none;filter:none;text-decoration:underline}
+.jx .btn.jx-play{--b1:#ffa560;--b2:#d63f28;--lip:#6c1507;--glow:#ff6a3aaa;color:#fff;text-shadow:0 2px 0 #7a1a0a;border-color:#ffd0a0aa;min-width:200px;padding:9px 20px;font-size:15px}
+.jx .btn.jx-guard{--b1:#a2c8ec;--b2:#3c6893;--lip:#132c46;--glow:#7fb6eaaa;color:#fff;text-shadow:0 2px 0 #0f2740;border-color:#d6ebffaa;min-width:170px;padding:9px 18px;background:linear-gradient(180deg,var(--b1),var(--b2))}
+.jx .btn.jx-disc{--b1:#7f6e5c;--b2:#4a3e33;--lip:#211a14;min-width:110px;padding:9px 16px}
+.jx .btn.jx-pass{--b1:#c8a2ee;--b2:#7148a8;--lip:#2c1748;--glow:#b48ae8aa;color:#fff;text-shadow:0 2px 0 #2c1748}
+.jx .btn .bl{display:block;font-size:17px;letter-spacing:.01em}
+.jx .btn .bv{display:inline-block;margin-top:4px;font-size:13px;font-weight:900;background:#00000040;border-radius:999px;padding:2px 11px;box-shadow:inset 0 1px 3px #0007;font-variant-numeric:tabular-nums}
+.jx-actions{display:flex;gap:12px;align-items:stretch}
+.jx .btn.jx-big{font-size:18px;padding:14px 28px;border-radius:15px}
+.jx .btn.primary.jx-big{box-shadow:0 6px 0 var(--lip),0 12px 26px #e8b85a44,inset 0 1px 0 #fff9,inset 0 -2px 0 #0003}
+
+/* segmented controls (sort, speed) */
+.jx-seg{display:inline-flex;align-items:center;gap:2px;background:#000a;border:1px solid #ffffff14;border-radius:12px;padding:3px;box-shadow:inset 0 2px 7px #000b}
+.jx-seg .seg-l{font-size:11px;font-weight:900;color:var(--dim);padding:0 8px 0 6px}
+.jx-seg .seg{border:0;background:transparent;color:var(--mute);font:800 13px "Nunito Sans",sans-serif;padding:7px 12px;border-radius:9px;cursor:pointer;transition:background .15s,color .15s,transform .1s}
+.jx-seg .seg:hover{color:var(--ink);background:#ffffff10}
+.jx-seg .seg:active{transform:scale(.94)}
+.jx-seg .seg.on{background:linear-gradient(180deg,#5c4c3d,#3a2f25);color:var(--ink);box-shadow:0 2px 0 #140f0b,inset 0 1px 0 #ffffff2a}
+
+/* chips x mult tiles */
+.jx-cm{gap:12px;margin:12px 0 4px}
+.jx-tile{position:relative;min-width:120px;padding:9px 14px 7px;border-radius:16px;display:flex;flex-direction:column;align-items:center;line-height:1;transition:box-shadow .2s}
+.jx-tile::after{content:"";position:absolute;left:3px;right:3px;top:3px;height:46%;border-radius:13px 13px 40% 40%/13px 13px 18px 18px;background:linear-gradient(180deg,#ffffff40,#ffffff00);pointer-events:none}
+.jx-tile b{font:900 40px/1 "Nunito Sans",sans-serif;font-variant-numeric:tabular-nums;color:#fff;text-shadow:0 3px 0 #0007;display:block;position:relative;z-index:1}
+.jx-tile small{font-size:11px;font-weight:900;letter-spacing:.06em;color:#ffffffd0;margin-top:4px;position:relative;z-index:1}
+.jx-tile.chips{background:linear-gradient(180deg,#68b8ff,#2a74c8 55%,#184a88);box-shadow:0 0 0 2px #0d2a52,0 6px 0 #0d2a52,0 12px 22px #000a,inset 0 -3px 0 #0003}
+.jx-tile.mult{background:linear-gradient(180deg,#ff9070,#e0412a 55%,#962212);box-shadow:0 0 0 2px #4a0e06,0 6px 0 #4a0e06,0 12px 22px #000a,inset 0 -3px 0 #0003}
+.jx-tile.chips:has(b.bump){box-shadow:0 0 0 2px #0d2a52,0 6px 0 #0d2a52,0 12px 22px #000a,0 0 30px #5fb0ffcc}
+.jx-tile.mult:has(b.bump){box-shadow:0 0 0 2px #4a0e06,0 6px 0 #4a0e06,0 12px 22px #000a,0 0 30px #ff6a4acc}
+.jx-tile b.bump{animation:tileBump .26s cubic-bezier(.3,1.8,.5,1)}
+.jx-cm .x{font:900 32px "Nunito Sans";color:#fff;text-shadow:0 3px 0 #000;transform:rotate(-8deg)}
+.jx-score.guardmode .jx-tile.chips{background:linear-gradient(180deg,#d2e2f0,#6d8299 55%,#3d4b5a);box-shadow:0 0 0 2px #1e2830,0 6px 0 #1e2830,0 12px 22px #000a}
+.jx-score.guardmode .jx-tile.chips small{font-size:0}.jx-score.guardmode .jx-tile.chips small::after{content:"Block";font-size:11px}
+.jx-formname{display:inline-block;min-height:0;margin:0 auto;padding:7px 34px 8px;font-size:20px;color:#fff;text-shadow:0 2px 0 #0008;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--bk) 45%,#3a2a1c),color-mix(in srgb,var(--bk) 18%,#140e09));clip-path:polygon(0 0,100% 0,95% 50%,100% 100%,0 100%,5% 50%)}
+.jx-formname .dim{color:#ffffffaa;font-family:"Nunito Sans";font-size:13px;font-weight:800}
+.jx-total{font:900 60px/1.05 "Nunito Sans",sans-serif;color:#fff;margin-top:4px;text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000,0 5px 0 #000,0 0 30px color-mix(in srgb,var(--bk) 55%,transparent)}
+.jx-total .jx-prev{opacity:.5}
+.jx-outcome{gap:5px;margin-top:8px}
+.jx-outcome>div{background:#0006;border:1px solid #ffffff10;border-radius:9px;padding:4px 10px}
+.jx-outcome>div:nth-child(1) b{color:#ffb08a}.jx-outcome>div:nth-child(2) b{color:#a8d0f0}
+.jx-formsbtn{border-radius:999px;background:#0007;box-shadow:0 2px 0 #000;font-weight:900}
+
+/* stats bar: heart HP, shield Block, gem Energy, discard pips, turn */
+.jx-stats{gap:14px;padding:2px}
+.jx-php{display:flex;align-items:center;gap:6px}
+.jx-php .heart{font-size:28px;line-height:1;color:#ff5a6a;text-shadow:0 2px 0 #5a0a14,0 0 14px #ff3a5a88}
+.jx-fight.lowhp .jx-php .heart{animation:beat 1s ease-in-out infinite}
+.jx-php .jx-phpbar{position:relative;width:210px;height:26px;border-radius:13px;background:#000a;border:2px solid #000;box-shadow:0 0 0 1px #ffffff1c,inset 0 3px 6px #000c;overflow:hidden}
+.jx-php .jx-phpbar i{background:linear-gradient(180deg,#9ff6ae,#2fbf63 50%,#168a3c);box-shadow:inset 0 2px 0 #ffffff60}
+.jx-fight.lowhp .jx-php .jx-phpbar i{background:linear-gradient(180deg,#ffa0a0,#e0412a 50%,#8a1a12)}
+.jx-php .jx-phpbar b{position:absolute;inset:0;display:grid;place-items:center;font-size:14px;font-weight:900;color:#fff;text-shadow:0 1px 2px #000,0 0 4px #000}
+.jx-block{position:relative;width:58px;height:62px;padding:0;border:0;border-radius:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;filter:drop-shadow(0 4px 0 #0a1a2c) drop-shadow(0 6px 10px #000a)}
+.jx-block::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#9cc3e8,#3c6893 60%,#24456a);clip-path:polygon(50% 0,100% 13%,95% 60%,50% 100%,5% 60%,0 13%)}
+.jx-block::after{content:"";position:absolute;inset:5px;clip-path:polygon(50% 0,100% 13%,95% 60%,50% 100%,5% 60%,0 13%);background:linear-gradient(180deg,#ffffff40,transparent 50%);pointer-events:none}
+.jx-block:not(.has)::before{background:linear-gradient(180deg,#686e75,#3a3e43 60%,#26292c)}
+.jx-block b{position:relative;z-index:1;font-size:22px;font-weight:900;color:#fff;text-shadow:0 2px 0 #0f2740;margin-top:-8px}
+.jx-block small{position:relative;z-index:1;font-size:9px;font-weight:900;color:#e2f0ff;letter-spacing:.04em;margin-top:1px}
+.jx-energy,.jx-disc{display:flex;align-items:center;gap:8px;background:#0008;border:1px solid #ffffff12;border-radius:12px;padding:7px 12px;box-shadow:inset 0 2px 7px #000a;color:var(--ink)}
+.jx-energy .lbl,.jx-disc .lbl{font-size:11px;font-weight:900;color:var(--dim)}
+.jx-energy .pips{display:flex;gap:8px;padding:0 3px}
+.jx-energy .pip{width:14px;height:14px;border-radius:3px;transform:rotate(45deg);background:linear-gradient(135deg,#fff8d4,#f6c552 45%,#b0761a);box-shadow:0 0 10px #f2c46daa,inset 0 0 0 1px #7a4f12}
+.jx-energy .pip.spent{background:linear-gradient(135deg,#5a4c34,#2e2618);box-shadow:inset 0 0 0 1px #0009}
+.jx-energy .pip.over{background:linear-gradient(135deg,#ffb8a8,#e0412a);box-shadow:0 0 12px #e0412a}
+.jx-en{font-size:19px;font-weight:900;margin-left:2px}.jx-en small{font-size:12px;color:var(--mute)}.jx-en.bad{color:#ff8a7a}
+.jx-disc .dpip{width:13px;height:18px;border-radius:3px;border:1.5px solid #c9a96a77;transform:rotate(-8deg)}
+.jx-disc .dpip.on{border-color:#c9a96a;background:repeating-conic-gradient(from 45deg,#3a2414 0 25%,#5a381c 0 50%) 0 0/6px 6px;box-shadow:0 0 6px #c9a96a77}
+.jx-turn{margin-left:auto;font-size:13px;font-weight:900;color:var(--ink);background:color-mix(in srgb,var(--bk) 22%,#000b);border:1px solid color-mix(in srgb,var(--bk) 45%,transparent);border-radius:999px;padding:6px 14px}
+
+/* score pops as badges */
+.jx-pop{font:900 21px "Nunito Sans",sans-serif;padding:2px 10px;border-radius:10px;white-space:nowrap}
+.jx-pop.chips{color:#fff;background:linear-gradient(180deg,#68b8ff,#2268b8);box-shadow:0 3px 0 #0d2a52,0 0 16px #5fb0ff88;text-shadow:0 1px 0 #0d2a52}
+.jx-pop.mult{color:#fff;background:linear-gradient(180deg,#ff9070,#d63f28);box-shadow:0 3px 0 #4a0e06,0 0 16px #ff6a4a88;text-shadow:0 1px 0 #4a0e06}
+.jx-pop.xmult{color:#fff;background:linear-gradient(180deg,#ff6a5a,#a81a10);border:2px solid #fff;box-shadow:0 4px 0 #3a0804,0 0 24px #ff3a2a;font-size:28px}
+.jx-pop.guardpop{color:#fff;background:linear-gradient(180deg,#bcd8f0,#4a73a0);box-shadow:0 3px 0 #132c46,0 0 14px #9fd0f066;text-shadow:0 1px 0 #132c46}
+.jx-pop.effect{color:#2a1704;background:linear-gradient(180deg,#ffe28a,#e0a030);box-shadow:0 3px 0 #7a4f12;font-size:15px;text-shadow:none}
+.jx-pop.heal{color:#fff;background:linear-gradient(180deg,#9ff6ae,#22a050);box-shadow:0 3px 0 #0e4a22;text-shadow:0 1px 0 #0e4a22}
+.jx-pop.dmg{background:none;box-shadow:none;padding:0}
+
+/* HUD pieces */
+.jx .chip{border:1px solid #ffffff1a;background:linear-gradient(180deg,#3e332b,#241d18);box-shadow:0 3px 0 #140f0b,inset 0 1px 0 #ffffff22;color:var(--ink);font-weight:900;transition:transform .1s,filter .15s}
+.jx .chip:active{transform:translateY(2px);box-shadow:0 1px 0 #140f0b}
+.jx .chip.on{background:linear-gradient(180deg,#c3a6f4,#6a48a8);border-color:#e6d8ff88;box-shadow:0 3px 0 #2c1748,0 0 14px #b79af066,inset 0 1px 0 #ffffff44;color:#fff;text-shadow:0 1px 0 #2c1748}
+.jx .chip.on:hover{filter:brightness(1.12)}
+.jx .chip.empty{background:transparent;box-shadow:none;border:1px dashed #5a4d40;color:var(--dim)}
+.jx-hudgold{background:#000a;border-radius:999px;padding:4px 14px 4px 8px;border:1px solid #e8b85a55;box-shadow:inset 0 2px 6px #000a}
+.jx-hudgold .jx-coinico{width:1.15em;height:1.15em}
+.jx-hudhp .jx-phpbar{height:14px;border:2px solid #000;box-shadow:0 0 0 1px #ffffff1c}
+.jx-hudhp .jx-phpbar i{background:linear-gradient(180deg,#9ff6ae,#2fbf63 50%,#168a3c)}
+.jx-hudhp.low .jx-phpbar i{background:linear-gradient(180deg,#ffa0a0,#e0412a 50%,#8a1a12)}
+.jx kbd{background:linear-gradient(180deg,#3e332b,#241d18);color:var(--ink);border:1px solid #ffffff22;border-bottom:1px solid #ffffff22;box-shadow:0 2px 0 #0a0806}
+.jx-next kbd{font-size:12px;padding:2px 7px}
+.jx-block{width:50px;height:54px}.jx-block b{font-size:19px;margin-top:-7px}
+.jx-hand{--cw:136px;min-height:228px;padding-top:38px}
+.jx-enemy{padding:10px 24px}
+.jx-bottom{padding:10px 14px;gap:8px}
+.jx .btn:disabled{filter:grayscale(.6) brightness(.72)}
+.jx-bottom.locked .jx-controls{opacity:.8}
+

@@ -1,0 +1,23 @@
+/* ---------- Spotlight ---------- */
+.spot{position:fixed;inset:0;z-index:55;display:none;place-items:center;background:#000d;cursor:pointer;overflow:hidden}
+.spot.on{display:grid}
+.spot .rays{position:absolute;width:220vmax;height:220vmax;left:50%;top:50%;margin:-110vmax 0 0 -110vmax;opacity:0;transition:opacity .4s;
+  background:repeating-conic-gradient(from 0deg,var(--rc) 0 6deg,transparent 6deg 18deg);animation:spin 18s linear infinite;
+  -webkit-mask:radial-gradient(circle,#000 0%,transparent 28%);mask:radial-gradient(circle,#000 0%,transparent 28%)}
+.spot.lit .rays{opacity:.45}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spot .glow{position:absolute;width:70vmin;height:70vmin;border-radius:50%;background:radial-gradient(circle,var(--rc) 0%,transparent 65%);opacity:0;transition:opacity .4s}
+.spot.lit .glow{opacity:.7}
+.spot .holder{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:16px}
+.spot .flip{--cw:min(400px,calc(68vh * .716),84vw)}
+.spot .flip .inner{transition-duration:.75s}
+.spot .flip.enter{animation:enter .45s cubic-bezier(.2,.9,.3,1.3) both}
+@keyframes enter{from{transform:scale(.4) translateY(80px);opacity:0}}
+.spot .banner{font-family:"Marcellus SC",serif;font-size:clamp(26px,4.5vw,46px);letter-spacing:.08em;color:#fff;text-shadow:0 0 18px var(--rc),0 2px 4px #000;opacity:0;transform:scale(.6);transition:.35s cubic-bezier(.2,.9,.3,1.4);text-align:center;line-height:1.1}
+.spot .banner small{display:block;font-family:"Nunito Sans";font-size:15px;letter-spacing:.12em;font-weight:800;opacity:.9;margin-top:4px}
+.spot.lit .banner{opacity:1;transform:none}
+.spot .hint{position:absolute;bottom:22px;left:0;right:0;text-align:center;color:#fff9;font-weight:700;font-size:14px;z-index:2}
+.part{position:absolute;left:50%;top:50%;width:var(--s);height:var(--s);border-radius:50%;background:var(--c);z-index:1;animation:burst var(--d) cubic-bezier(.1,.7,.3,1) forwards;box-shadow:0 0 8px var(--c)}
+@keyframes burst{from{transform:translate(-50%,-50%) scale(1);opacity:1}to{transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(.3);opacity:0}}
+.spot.shakeit .holder{animation:shake .5s}
+

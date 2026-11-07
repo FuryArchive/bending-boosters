@@ -1,0 +1,30 @@
+/* ---------- Stage (reveal overlay) ---------- */
+.stage{position:fixed;inset:0;z-index:40;display:none;flex-direction:column;background:radial-gradient(1200px 800px at 50% 40%,#2a1d14 0%,#0a0807 70%)}
+.stage.on{display:flex}
+.stageTop{display:flex;align-items:center;gap:10px;padding:14px 24px;flex-wrap:wrap}
+.stageTop h2{margin:0;font-size:26px}
+.stageTop .sp{flex:1}
+.stBody{flex:1;overflow:auto;padding:10px 24px 20px;display:flex;flex-direction:column;align-items:center}
+.stBottom{padding:14px 24px 20px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;border-top:1px solid #ffffff12;min-height:74px}
+.stBottom .msg{font-size:17px;font-weight:800}
+.bigPackWrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;min-height:60vh}
+.bigPackWrap .pack{width:280px;height:440px}
+.bigPackWrap .pack.gR{box-shadow:0 0 60px #e8c25a88,0 22px 50px #000b}
+.bigPackWrap .pack.gM{box-shadow:0 0 80px #f07a3acc,0 22px 50px #000b}
+.bigPackWrap .pack.gS{box-shadow:0 0 90px #c48cffee,0 0 140px #5ad0ff77,0 22px 50px #000b}
+.tapHint{font-size:18px;font-weight:800;color:var(--mute);animation:blink 1.4s infinite}
+@keyframes blink{50%{opacity:.4}}
+.pack.shake{animation:shake .55s}
+.pack.tear{animation:tear .5s forwards}
+@keyframes shake{15%{transform:rotate(-5deg) scale(1.03)}35%{transform:rotate(5deg)}55%{transform:rotate(-4deg) scale(1.05)}75%{transform:rotate(3deg)}}
+@keyframes tear{to{transform:translateY(-60px) scale(1.15);opacity:0;filter:brightness(2.5)}}
+.revealGrid{display:grid;gap:16px 14px;justify-content:center;width:100%}
+.sumGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;width:100%;max-width:1100px;margin-bottom:18px}
+.stat{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.stat .k{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.07em;font-weight:800}
+.stat .v{font-size:28px;font-weight:900;margin-top:2px}
+.stat .s{font-size:12px;color:var(--dim)}
+.flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:70}
+.flash.go{animation:flash .5s}
+@keyframes flash{0%{opacity:.75}100%{opacity:0}}
+

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bending Boosters — Avatar MTG Pack Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://cards.scryfall.io">
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Marcellus+SC&family=Nunito+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+<!-- @slot styles -->
+</style>
+<style id="visual-edition">
+<!-- @slot visual-edition -->
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">
+      <svg width="46" height="46" viewBox="0 0 40 40" aria-hidden="true">
+        <circle cx="20" cy="20" r="18" fill="none" stroke="#e8b85a" stroke-width="1.5"/>
+        <circle cx="20" cy="9" r="4.5" fill="#f2c46d"/><circle cx="31" cy="20" r="4.5" fill="#e8543a"/>
+        <circle cx="20" cy="31" r="4.5" fill="#6fa356"/><circle cx="9" cy="20" r="4.5" fill="#5aa7e0"/>
+        <circle cx="20" cy="20" r="3" fill="#f3ead9"/>
+      </svg>
+      <div><h1>Bending Boosters</h1><small>Avatar: The Last Airbender (TLA) play booster simulator</small></div>
+    </div>
+    <div class="wallet">
+      <div class="pill" title="Wallet"><span class="gem" style="background:linear-gradient(135deg,#bff5c8,#2fbf63);box-shadow:0 0 8px #2fbf6388"></span><span id="gems">$0</span></div>
+      <div class="pill spent" title="Market value of your collection">Collection <span id="spent">$0.00</span></div>
+      <button class="btn iconbtn" id="soundBtn" title="Sound on/off">🔊</button>
+      <button class="btn" id="shopBtn">+ Add funds</button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-v="open" class="on">Open packs</button>
+    <button data-v="collection">Collection</button>
+    <button data-v="decks">Decks</button>
+    <button data-v="journey">Journey</button>
+    <button data-v="stats">Stats</button>
+    <button data-v="odds">Odds &amp; rules</button>
+    <button data-v="settings">Settings</button>
+  </nav>
+
+  <!-- OPEN -->
+  <section class="view on" id="v-open">
+    <div class="panel hero">
+      <div class="pack" id="pack" title="Open one pack">
+        <div class="shine"></div>
+        <div class="seal"><svg viewBox="0 0 100 100"><g fill="none" stroke="#fff" stroke-opacity=".85" stroke-width="2"><path d="M50 12 C70 22 70 40 50 50 C30 60 30 78 50 88"/><path d="M12 50 C22 30 40 30 50 50 C60 70 78 70 88 50"/></g><circle cx="50" cy="50" r="7" fill="#fff" fill-opacity=".9"/></svg></div>
+        <div class="ptitle"><small>PLAY BOOSTER · 14 CARDS</small>The Last Airbender</div>
+      </div>
+      <div class="heroSide">
+        <div class="eyebrow">The Last Airbender · Play boosters</div>
+        <h2>Master all four elements</h2>
+        <div class="muted">Each pack has 14 cards with real Play Booster odds: one rare or mythic, two wildcards (one foil), and a chance at Scene, Field Notes, Battle Pose and Elemental Frame versions.</div>
+        <div class="buyRow">
+          <button class="buy main" id="open1"><b>Open 1 pack</b><span id="p1cost"></span></button>
+          <button class="buy" id="open10"><b>Open 10 packs</b><span id="p10cost"></span></button>
+          <button class="buy" id="open30"><b>Open a box · 30</b><span id="p30cost"></span></button>
+        </div>
+        <div class="pityLine" id="pityInfo"></div>
+        <div class="note" id="imgStatus" style="margin-top:6px"></div>
+      </div>
+    </div>
+    <div class="lastHead"><h2 id="lastTitle">Last opening</h2><span class="sp"></span><button class="btn" id="lastToggle" style="display:none">Show every card</button></div>
+    <div id="last"><div class="panel note" style="text-align:center;padding:40px">Nothing opened yet. Click the pack to begin.</div></div>
+  </section>
+
+  <!-- COLLECTION -->
+  <section class="view" id="v-collection">
+    <div class="panel" style="margin-bottom:18px">
+      <div class="row" style="justify-content:space-between"><h2 style="margin:0">Collection</h2><div class="muted" id="colSummary"></div></div>
+      <div class="progress" style="margin-top:12px"><i id="colBar" style="width:0"></i></div>
+    </div>
+    <div class="filters" id="colFilters">
+      <select id="fSet"><option value="TLA">TLA · main set</option><option value="TLE">TLE · Eternal</option><option value="SPEC">Special versions</option></select>
+      <span class="chip on" data-own="all">All</span><span class="chip" data-own="have">Owned</span><span class="chip" data-own="miss">Missing</span>
+      <span style="width:8px"></span>
+      <span class="chip on" data-r="all">Any rarity</span><span class="chip" data-r="C">Common</span><span class="chip" data-r="U">Uncommon</span><span class="chip" data-r="R">Rare</span><span class="chip" data-r="M">Mythic</span>
+      <span style="width:8px"></span>
+      <select id="fCol"><option value="">Any color</option><option value="W">White · Air</option><option value="U">Blue · Water</option><option value="B">Black</option><option value="R">Red · Fire</option><option value="G">Green · Earth</option><option value="M">Multicolor</option><option value="X">Colorless / Land</option></select>
+      <input type="search" id="fq" placeholder="Search name…">
+      <select id="fSort"><option value="num">Sort: set number</option><option value="price">Sort: price</option><option value="count">Sort: copies owned</option></select>
+      <span style="flex:1"></span>
+      <button class="btn" id="sellAll">Sell all extras</button>
+    </div>
+    <div class="colGrid" id="colGrid"></div>
+  </section>
+
+  <!-- DECKS -->
+  <section class="view" id="v-decks">
+    <div class="panel" style="margin-bottom:20px">
+      <div class="row" style="justify-content:space-between;align-items:flex-end">
+        <div><h2 style="margin-bottom:4px">Build a deck from your pulls</h2><div class="note">Uses only cards you own (basic lands are free).  Picks a color pair, balances creatures and spells, and fills the mana curve.</div></div>
+        <div class="row">
+          <select id="dArch"></select>
+          <select id="dFmt"><option value="lim">Limited · 40 cards (sealed)</option><option value="con">Constructed · 60 cards (max 4 copies)</option></select>
+          <button class="btn primary" id="dBuild">Build deck</button>
+          <button class="btn" id="dCopy">Copy for MTG Arena</button>
+        </div>
+      </div>
+      <div id="deckOut" style="margin-top:18px"></div>
+    </div>
+    <h2>Draft archetypes</h2>
+    <p class="note" style="margin-top:-6px">The set's ten two-color draft themes. Key cards are drawn from community archetype guides. Your fit is how strong a deck your current collection makes in those colors.</p>
+    <div class="archGrid" id="archGrid"></div>
+    <h2 style="margin-top:30px">Standard decks with Avatar cards</h2>
+    <p class="note" style="margin-top:-6px">Competitive decks that picked up Avatar cards, with share of winning decks from Frank Karsten's post-release Standard analysis (magic.gg, Nov 2025). The metagame has moved on since. These decks also need cards from other sets, so only the Avatar pieces are tracked here.</p>
+    <div class="archGrid" id="stdGrid"></div>
+  </section>
+
+  <!-- JOURNEY -->
+  <section class="view" id="v-journey"><div id="journeyRoot"></div></section>
+
+  <!-- STATS -->
+  <section class="view" id="v-stats">
+    <h2>Money</h2>
+    <div class="sumTiles" id="moneyTiles"></div>
+    <div class="two" style="margin-bottom:18px">
+      <div class="panel"><h2>Cost vs value pulled</h2><div id="valChart"></div></div>
+      <div class="panel"><h2>Most valuable cards you own</h2><div id="topVal" class="histList" style="max-height:330px"></div></div>
+    </div>
+    <h2>Pulls</h2>
+    <div class="sumTiles" id="statTiles"></div>
+    <div class="two">
+      <div class="panel">
+        <h2>Observed vs expected (per pack)</h2>
+        <p class="note">Bar = your average per pack. White tick = expected value from the booster model.</p>
+        <div class="bars" id="rarityBars"></div>
+        <h3>Mythic droughts</h3>
+        <div id="drought" class="note"></div>
+      </div>
+      <div class="panel">
+        <div class="row" style="justify-content:space-between"><h2 style="margin:0">Pull log</h2><button class="btn" id="copyCsv">Copy CSV</button></div>
+        <p class="note">Rares and better from recent packs. The CSV has every card from every logged pack (last 3,000 packs).</p>
+        <div class="histList" id="histList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ODDS -->
+  <section class="view" id="v-odds">
+    <div class="two">
+      <div class="panel">
+        <h2>What's in a pack</h2>
+        <p class="note">14 cards per Play Booster. Slot structure and replacement rates follow the open-source <b>Forge</b> project's TLA definition, which is based on the published play booster fact sheet. Special-version rates are approximate.</p>
+        <div id="slotTable"></div>
+      </div>
+      <div class="panel">
+        <h2>Per-pack odds</h2>
+        <div id="oddsTable"></div>
+        <h3>Gacha layer (not in real Magic)</h3>
+        <div class="note" id="gachaRules"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="v-settings">
+    <div class="two">
+      <div class="panel">
+        <h2>Display &amp; feel</h2>
+        <div class="field"><label><input type="checkbox" id="sReal"> Show real card images from Scryfall</label><span class="h">Images load live from scryfall.com. If an image can't load, the card falls back to generated art.</span></div>
+        <div class="field"><label><input type="checkbox" id="sHints"> Glowing card backs hint at rarity</label></div>
+        <div class="field"><label><input type="checkbox" id="sSound"> Sound effects</label></div>
+        <div class="field"><label><input type="checkbox" id="sFast"> Quick mode (skip the pack-tear step)</label></div>
+        <h2 style="margin-top:22px">Economy &amp; pity</h2>
+        <div class="field"><label>Pack price ($)</label><input type="number" id="sPrice" min="0.5" step="0.01"><span class="h">Real Play Booster MSRP is $6.99.</span></div>
+        <div class="field"><label>Box of 30 price ($)</label><input type="number" id="sBox" min="1" step="0.01"></div>
+        <div class="field"><label>Sell rate (% of market)</label><input type="number" id="sBuy" min="1" max="100"><span class="h">Stores typically pay 50–70% of market.</span></div>
+        <div class="field"><label>Copies to keep when selling extras</label><input type="number" id="sKeep" min="0" max="20"></div>
+        <div class="field"><label>Mythic pity (packs)</label><input type="number" id="sPity" min="0"><span class="h">Guarantees a mythic in the rare slot after this many packs without one. 0 = off (faithful paper odds).</span></div>
+        <button class="btn primary" id="saveSettings">Save settings</button>
+      </div>
+      <div class="panel">
+        <h2>Research tools</h2>
+        <div class="field"><label>RNG seed</label>
+          <div class="row"><input type="text" id="sSeed" placeholder="leave blank for random" style="flex:1"><button class="btn" id="applySeed">Reset with seed</button></div>
+          <span class="h">Same seed + same actions = same pulls. Resetting clears collection, wallet, stats and the active Journey.</span></div>
+        <div class="field"><label>Starting money on reset ($)</label><input type="number" id="sStart" min="0"></div>
+        <div class="field"><label>Image cache</label><div class="row"><button class="btn" id="refreshImgs">Re-download image index</button><span class="h" id="imgInfo"></span></div></div>
+        <h3>Danger zone</h3>
+        <div class="row"><button class="btn" id="resetAll">Reset everything</button><span class="h" id="resetConfirm"></span></div>
+        <h3>About</h3>
+        <p class="note">Fan-made simulator for personal research, not affiliated with Wizards of the Coast or Paramount/Nickelodeon. Card images, when shown, are loaded live from <a href="https://scryfall.com" target="_blank" rel="noopener">Scryfall</a> and remain © Wizards of the Coast / Paramount. The fallback art is procedurally generated. Card data comes from the Forge project. Progress is saved in this browser only.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="stage" id="stage">
+  <div class="stageTop"><h2 id="stTitle"></h2><span class="sp"></span><button class="btn" id="stSkip">Reveal all</button><button class="btn" id="stClose">Close</button></div>
+  <div class="stBody" id="stBody"></div>
+  <div class="stBottom" id="stBottom"></div>
+</div>
+<div class="spot" id="spot"><div class="rays"></div><div class="glow"></div><div class="holder" id="spotHolder"></div><div class="hint">click anywhere to continue</div></div>
+<div class="flash" id="flash"></div>
+<div class="modal" id="modal"><div class="box"><button class="x" id="mx">×</button><div id="mbody"></div></div></div>
+<div class="toast" id="toast"></div>
+<script>
+<!-- @slot boosters -->
+
+</script>
+<script>
+<!-- @slot journey -->
+
+<!-- @slot journey-recovery -->
+</script>
+</body>
+</html>

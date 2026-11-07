@@ -1,0 +1,203 @@
+/* ================= rework: living backdrop, glass, bolder fights/cards/map ================= */
+.wrap{position:relative;z-index:1}
+.jx-backdrop{position:fixed;inset:0;width:100vw;height:100vh;z-index:0;pointer-events:none;opacity:0;transition:opacity .8s}
+.jx-backdrop.on{opacity:1}
+.jx-hud,.jx-mapside,.jx-bottom,.jx-score,.jx-enemy,.jx-modalbox{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.jx-hud{background:linear-gradient(180deg,color-mix(in srgb,var(--bk3) 80%,transparent),color-mix(in srgb,var(--bk2) 70%,transparent))}
+.jx-mapside{background:linear-gradient(180deg,color-mix(in srgb,var(--bk3) 70%,transparent),#0b080699)}
+.jx-item,.jx-next,.jx-choice{background:#14100cb0}
+.jx-joker{background:linear-gradient(170deg,#3a2c1dd9,#1a130cd9)}
+.jx-modalbox{background:#1d1814ee}
+
+/* screen-change splash */
+.jx-wipe{position:absolute;inset:-14px;z-index:57;pointer-events:none;border-radius:20px;mix-blend-mode:screen;
+  background:radial-gradient(circle at var(--x) var(--y),color-mix(in srgb,var(--bk) 55%,#fff) 0,var(--bk) 18%,color-mix(in srgb,var(--bk) 30%,transparent) 38%,transparent 62%);animation:wipeOut .62s cubic-bezier(.2,.7,.3,1) both}
+@keyframes wipeOut{from{clip-path:circle(0 at var(--x) var(--y));opacity:.95}to{clip-path:circle(160% at var(--x) var(--y));opacity:0}}
+
+/* projectiles and hit effects (in document.body) */
+.jx-orb{position:fixed;z-index:2001;pointer-events:none;width:30px;height:30px;border-radius:50%;background:radial-gradient(circle,#fff 0 25%,var(--c) 55%,transparent 72%);box-shadow:0 0 24px 8px var(--c)}
+.jx-trail{position:fixed;z-index:2000;pointer-events:none;width:16px;height:16px;margin:-8px;border-radius:50%;background:var(--c);filter:blur(3px);opacity:.7;animation:trail .42s ease-out forwards}
+@keyframes trail{to{transform:scale(.2);opacity:0}}
+.jx-shock{position:fixed;z-index:2001;pointer-events:none;width:20px;height:20px;margin:-10px;border-radius:50%;border:4px solid var(--c);box-shadow:0 0 20px var(--c),inset 0 0 20px var(--c);animation:shock .6s cubic-bezier(.1,.8,.3,1) forwards}
+.jx-shock.big{border-width:7px;animation-duration:.75s}
+@keyframes shock{to{transform:scale(12);opacity:0}}
+.jx-shock.big{animation-name:shockBig}@keyframes shockBig{to{transform:scale(22);opacity:0}}
+.jx-spark{position:fixed;z-index:2001;pointer-events:none;width:14px;height:3px;border-radius:3px;background:linear-gradient(90deg,#fff,var(--c));box-shadow:0 0 8px var(--c)}
+.jx-slash{position:fixed;z-index:2001;pointer-events:none;height:6px;margin-top:-3px;background:linear-gradient(90deg,transparent,#fff 30%,#ff5a4a 60%,transparent);box-shadow:0 0 18px #ff3a3a;transform:rotate(-6deg) scaleX(0);transform-origin:0 50%;animation:slashIn .45s cubic-bezier(.2,.9,.3,1) forwards;border-radius:6px}
+@keyframes slashIn{30%{transform:rotate(-6deg) scaleX(1);opacity:1}100%{transform:rotate(-6deg) scaleX(1) translateY(8px);opacity:0}}
+.jx-shard{position:fixed;z-index:2001;pointer-events:none;width:9px;height:12px;background:linear-gradient(135deg,#e6f4ff,#5aa7e0);clip-path:polygon(50% 0,100% 60%,40% 100%,0 40%);box-shadow:0 0 6px #9fd0f0}
+
+/* ---- fight: enemy stage ---- */
+.jx-enemy{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"portrait info intent";gap:10px 28px;align-items:center;padding:16px 26px;
+  background:radial-gradient(ellipse at 50% 30%,color-mix(in srgb,var(--bk) 20%,transparent),transparent 65%),#0c0907a6;border:1px solid color-mix(in srgb,var(--bk) 35%,#3a1a14)}
+.jx-enemy.boss{border-color:#f0c56a88;box-shadow:0 0 40px #f0c56a22 inset}
+.jx-enemy.elite{border-color:#e05a4a88}
+.jx-portrait{grid-area:portrait;position:relative;width:132px;height:132px;margin:6px}
+.jx-enemy.boss .jx-portrait{width:152px;height:152px}
+.jx-portrait .jx-enemyart{width:100%;height:100%;animation:breathe 3.4s ease-in-out infinite;filter:drop-shadow(0 10px 18px #000c)}
+@keyframes breathe{50%{transform:translateY(-5px) scale(1.02)}}
+.jx-portrait .aura{position:absolute;inset:-16px;border-radius:50%;background:conic-gradient(from 0deg,transparent,color-mix(in srgb,var(--bk) 75%,transparent),transparent 30%,transparent 50%,color-mix(in srgb,var(--bk) 60%,transparent),transparent 80%);
+  mask:radial-gradient(circle,transparent 58%,#000 60%,#000 66%,transparent 70%);-webkit-mask:radial-gradient(circle,transparent 58%,#000 60%,#000 66%,transparent 70%);animation:spin 6s linear infinite;filter:blur(1px)}
+.jx-portrait .aura.two{inset:-28px;opacity:.5;animation-duration:11s;animation-direction:reverse}
+.jx-enemy.boss .aura{background:conic-gradient(from 0deg,transparent,#f0c56acc,transparent 25%,transparent 50%,#f0c56aaa,transparent 75%)}
+.jx-enemy.elite .aura{background:conic-gradient(from 0deg,transparent,#e05a4acc,transparent 25%,transparent 50%,#e05a4aaa,transparent 75%)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.jx-portrait .ground{position:absolute;left:10%;right:10%;bottom:-18px;height:22px;border-radius:50%;background:radial-gradient(ellipse,#000b,transparent 70%)}
+.jx-enemyart svg .sil path,.jx-enemyart svg .sil circle{fill:#05030299}
+.jx-enemyart svg .sil .glow{fill:var(--glow);filter:drop-shadow(0 0 5px var(--glow))}
+.jx-enemyart svg .sil .line{fill:none;stroke:#050302aa;stroke-linecap:round}.jx-enemyart svg .sil .line.thin{stroke-width:2.5}
+.jx-enemyinfo{grid-area:info;display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%}
+.jx-enemyinfo>.row{flex-wrap:wrap}
+.jx-ename{font-size:30px;text-shadow:0 2px 12px #000}
+.jx-bosschip{letter-spacing:.04em;font-size:12px}
+.jx-hpbar{width:100%;height:28px;border-radius:14px;border:2px solid #000;box-shadow:0 0 0 1px #ffffff1a,0 6px 16px #0008}
+.jx-hpbar::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(10% - 1px),#0007 calc(10% - 1px) 10%);pointer-events:none}
+.jx-hpbar i.cur{background:linear-gradient(180deg,#ff7a5a,#d8402a 50%,#8a1e12)}
+.jx-hpbar i.lag{background:#fff3cf}
+.jx-hpbar span{font-size:14px;z-index:1}
+.jx-intent{grid-area:intent;justify-self:end;align-self:center;min-width:150px;padding:14px 18px;border-radius:18px;background:#000b;border:2px solid #ffffff22}
+.jx-intent .jx-sword{font-size:34px;display:flex;align-items:center;justify-content:center;gap:8px}
+.jx-intent .jx-sword b{font-size:38px}
+.jx-intent.danger{border-color:#ff5a4a;box-shadow:0 0 28px #ff3a3aaa,inset 0 0 18px #ff3a3a44;animation:dangerPulse .7s ease-in-out infinite alternate}
+.jx-intent.danger::after{content:"▼ you";position:absolute;left:50%;bottom:-22px;transform:translateX(-50%);font-size:12px;font-weight:900;color:#ff8a7a;animation:bob .6s ease-in-out infinite alternate}
+.jx-intent{position:relative}
+@keyframes dangerPulse{to{transform:scale(1.05)}}@keyframes bob{to{transform:translate(-50%,4px)}}
+.jx-progress .now{background:color-mix(in srgb,var(--bk) 22%,#00000099)!important}
+@media (max-width:800px){.jx-enemy{grid-template-areas:"portrait intent" "info info";grid-template-columns:auto 1fr}}
+
+/* ---- fight: score panel ---- */
+.jx-score{background:radial-gradient(circle at 50% 0,#3a2a1ccc,#120d09d9);border-width:2px;border-color:color-mix(in srgb,var(--bk) 30%,#6b5a43);padding:18px 16px;box-shadow:0 18px 40px #000a}
+.jx-cm span.chips,.jx-cm span.mult{font-size:36px;min-width:110px;border-radius:14px;transition:box-shadow .2s}
+.jx-cm span.chips{box-shadow:0 0 0 2px #9fd6ff inset,0 0 22px #2f7fd066}
+.jx-cm span.mult{box-shadow:0 0 0 2px #ffb09a inset,0 0 22px #e8543a66}
+.jx-cm span.bump{animation:tileBump .24s cubic-bezier(.3,1.8,.5,1)}
+@keyframes tileBump{40%{transform:scale(1.2) rotate(-3deg)}}
+.jx-total{font-size:58px;letter-spacing:-.01em;text-shadow:0 3px 0 #000,0 0 26px color-mix(in srgb,var(--bk) 60%,transparent)}
+.jx-score.fire .jx-total{color:#fff1c4;text-shadow:0 3px 0 #6a1a0c,0 0 30px #ff7a1a}
+.jx-pop{font-size:26px;text-shadow:0 3px 0 #000,0 0 12px #000}
+.jx-pop.dmg{font-size:44px}.jx-pop.dmg.big{font-size:80px;color:#ffe27a;text-shadow:0 5px 0 #8a3a0a,0 0 34px #ff7a1a}
+.jx-pop.xmult{font-size:32px;box-shadow:0 0 20px #ff3a2a}
+
+/* ---- fight: hand, piles, cards ---- */
+.jx-handrow{display:flex;align-items:flex-end;justify-content:center;gap:14px}
+.jx-pile{position:relative;width:74px;height:104px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;margin-bottom:24px}
+.jx-pile i{position:absolute;left:4px;right:4px;top:0;height:92px;border-radius:9px;border:2px solid #c9a96a;background:
+  radial-gradient(circle at 50% 50%,#c9a96a 0 9px,transparent 10px),repeating-conic-gradient(from 45deg,#3a2414 0 25%,#4a2e18 0 50%) 0 0/14px 14px;box-shadow:0 4px 10px #000a}
+.jx-pile i:nth-child(2){transform:translate(3px,-3px)}.jx-pile i:nth-child(3){transform:translate(6px,-6px)}
+.jx-pile.disc i{filter:grayscale(.6) brightness(.7)}
+.jx-pile b{position:relative;z-index:2;font-size:22px;font-weight:900;background:#000c;border-radius:999px;padding:0 10px;margin-bottom:-6px;border:1px solid #c9a96a88}
+.jx-pile span{position:absolute;bottom:-20px;font-size:11.5px;font-weight:800;color:var(--mute)}
+@media (max-width:900px){.jx-pile{display:none}}
+.jx-hand{--cw:142px;min-height:246px;padding-top:42px}
+.jx-hcard{transition:transform .3s cubic-bezier(.3,1.5,.5,1),filter .2s}
+.jx-hcard.deal{animation:jxdeal2 .5s cubic-bezier(.2,.9,.3,1.15) both;animation-delay:var(--d)}
+@keyframes jxdeal2{from{transform:translate(var(--dx,0),var(--dy,90px)) rotate(-32deg) scale(.42);opacity:0}}
+.jx-hcard .jc{animation:float 3.4s ease-in-out infinite alternate;animation-delay:var(--fd,0s)}
+@keyframes float{from{transform:translateY(-2px) rotate(-.7deg)}to{transform:translateY(3px) rotate(.7deg)}}
+.jx-hcard:hover{transform:translateY(-22px) scale(1.1) rotateX(var(--rx,0)) rotateY(var(--ry,0));z-index:6}
+.jx-hcard:hover .jc{animation-play-state:paused;box-shadow:0 22px 40px #000d,0 0 0 2px #fff4}
+.jx-hcard.sel{transform:translateY(-44px) scale(1.06) rotate(calc(var(--fan,0) * .4))}
+.jx-hcard.sel .jc{box-shadow:0 0 0 3px #ffd27a,0 0 34px #ffb84aaa,0 20px 30px #000c}
+.jx-stage{--cw:136px;min-height:200px}
+.jx-scard{animation:jxfly2 .42s cubic-bezier(.2,.9,.3,1.2) both;animation-delay:var(--d)}
+@keyframes jxfly2{from{transform:translateY(240px) rotate(14deg) scale(.6);opacity:0}}
+.jx-scard{transition:transform .22s cubic-bezier(.3,1.8,.5,1),filter .2s,opacity .2s}
+.jx-scard.lift{transform:translateY(-30px) scale(1.14) rotate(-2deg)}
+.jx-scard.scoring .jc{box-shadow:0 0 0 2px #fff6,0 0 26px color-mix(in srgb,var(--bk) 60%,transparent),0 14px 24px #000c}
+
+/* card face, rework */
+.jc{border-radius:calc(var(--cw)*.075);background:linear-gradient(160deg,#2f251c,#0c0907);box-shadow:0 10px 24px #000c,0 0 0 1px #000}
+.jc::before{inset:calc(var(--cw)*.028);border-radius:calc(var(--cw)*.055);box-shadow:inset 0 0 0 1.5px #ffffff55,inset 0 -10px 18px #0007,inset 0 8px 14px #ffffff22}
+.jc-name{background:linear-gradient(180deg,#2e231a,#120d09);border:1px solid #d6b66f66;box-shadow:0 2px 4px #0008}
+.jc-nm{color:#f8eedb;text-shadow:0 1px 0 #000}
+.jc-cost{width:1.9em;height:1.9em;font-size:1.15em;box-shadow:0 0 0 1.5px #3a2306,0 0 10px #f2c46d88}
+.jc-art{height:40%;box-shadow:inset 0 0 0 2px #000a,0 1px 0 #ffffff33}
+.jc-type{background:#120d09d9;color:#eadcc2;border:1px solid #ffffff14}
+.jc-stars{color:#f0c56a}
+.jc-rar{box-shadow:0 0 0 1px #0009,0 0 6px var(--jr)}
+.jc-text{background:#fbf4e6f2;color:#2a2018}
+.jc-stats b{font-size:2.05em}
+.jc-chips{background:linear-gradient(180deg,#3b8fe0,#1b4f8a)}
+.jc::after{content:"";position:absolute;inset:0;z-index:5;pointer-events:none;border-radius:inherit;background:radial-gradient(circle at var(--mx,50%) var(--my,30%),#ffffffaa,transparent 42%);opacity:0;mix-blend-mode:soft-light;transition:opacity .2s}
+.jx-hcard:hover .jc::after{opacity:1}
+.jc-sheen{position:absolute;inset:0;z-index:3;pointer-events:none}
+.jc.rar-R .jc-sheen,.jc.rar-M .jc-sheen{background:linear-gradient(115deg,transparent 25%,#ff6ad555 38%,#6ad5ff55 50%,#fff36a55 62%,transparent 75%);background-size:260% 100%;mix-blend-mode:color-dodge;animation:foil 4.5s linear infinite}
+.jc.rar-M .jc-sheen{animation-duration:3s;opacity:.9}
+@keyframes foil{from{background-position:120% 0}to{background-position:-120% 0}}
+
+/* buttons */
+.jx .btn{transition:transform .18s cubic-bezier(.3,1.6,.5,1),filter .15s,background .15s,border-color .15s}
+.jx .btn:active:not(:disabled){transform:scale(.94)}
+.jx .btn:not(:disabled):hover{transform:translateY(-1px)}
+.jx .btn.jx-play{background:linear-gradient(180deg,#ffbd6a,#ef5a3a 55%,#a8281a);color:#fff;border-color:#ffcf8a;text-shadow:0 1px 0 #6a1a0c;box-shadow:0 8px 22px #e8543a55,inset 0 1px 0 #fff8;position:relative;overflow:hidden;font-size:18px;min-width:190px}
+.jx .btn.jx-play::after{content:"";position:absolute;top:0;bottom:0;width:36%;left:-60%;background:linear-gradient(100deg,transparent,#fff8,transparent);transform:skewX(-20deg);animation:shine 2.6s ease-in-out infinite}
+.jx .btn.jx-play:disabled{filter:saturate(.3) brightness(.7)}.jx .btn.jx-play:disabled::after{display:none}
+@keyframes shine{0%,55%{left:-60%}100%{left:140%}}
+.jx-guard{background:linear-gradient(180deg,#a8c8e6,#4a73a0 55%,#24405e);border-color:#cfe3f5;color:#fff;text-shadow:0 1px 0 #0d2238;box-shadow:0 8px 20px #4a73a044,inset 0 1px 0 #fff8;min-width:170px;font-size:17px}
+.jx-guard:disabled{filter:saturate(.3) brightness(.7)}
+.btn.primary.jx-big{box-shadow:0 8px 24px #e8b85a44,inset 0 1px 0 #fff9}
+
+/* ---- map, rework ---- */
+.jx-mapscroll{background:color-mix(in srgb,var(--bk2) 62%,transparent);backdrop-filter:blur(2px)}
+.jx-map path.ink{stroke:var(--bk);stroke-width:13;opacity:.07;stroke-dasharray:none;animation:none}
+.jx-map path.ink.on{stroke:var(--gold);opacity:.22}
+.jx-map path.ink.next{opacity:.2}
+.jx-map path.ink.past{opacity:.03}
+.jx-map path.on{filter:drop-shadow(0 0 4px #e8b85a)}
+.jx-map .jx-node circle.seal{fill:#1b1510;stroke:#7a6850;stroke-width:2}
+.jx-map .jx-node circle.ring{fill:none;stroke:#ffffff26;stroke-width:1.5;stroke-dasharray:2 3;animation:none;filter:none}
+.jx-map .jx-node.elite circle.seal{fill:#3e1410;stroke:#e05a4a}
+.jx-map .jx-node.boss circle.seal{fill:var(--bk3);stroke:#f0c56a;stroke-width:3}
+.jx-map .jx-node.taken circle.seal{fill:#4a3a26;stroke:var(--gold)}
+.jx-map .jx-node.avail circle.seal{fill:var(--bk3);stroke:var(--bk);stroke-width:2.5;animation:jxPulse2 1.4s ease-in-out infinite}
+.jx-map .jx-node.avail:hover circle.seal,.jx-map .jx-node.hl circle.seal{stroke:#fff;fill:color-mix(in srgb,var(--bk) 35%,var(--bk3))}
+.jx-map .jx-node.chosen circle.seal{fill:var(--bk);stroke:#fff}
+.jx-node .pop{transform-box:fill-box;transform-origin:center;transition:transform .2s cubic-bezier(.3,1.6,.5,1)}
+.jx-node.avail:hover .pop{transform:scale(1.14)}
+.jx-node.avail .pop{animation:popIn .5s calc(var(--k) * 80ms) cubic-bezier(.3,1.7,.5,1) both}
+@keyframes popIn{from{transform:scale(.2);opacity:0}}
+.jx-node .rays{transform-box:fill-box;transform-origin:center;animation:spin 40s linear infinite}.jx-node .rays path{fill:#f0c56a;opacity:.45}
+.jx-map .bossname{fill:#f0c56a;font:400 17px "Marcellus",serif;paint-order:stroke;stroke:#000;stroke-width:4px}
+.jx-node:not(.avail):hover circle{transform:none}
+.jx-lotus.moving{filter:drop-shadow(0 0 12px var(--bk)) drop-shadow(0 0 4px #fff)}
+.jx-lotus ellipse{animation:petal 4s ease-in-out infinite alternate}
+@keyframes petal{to{opacity:.85}}
+.jx-fog{pointer-events:none}
+
+/* node screens: bigger headers, glow */
+.jx-nodebody h2{font-size:44px;text-shadow:0 0 30px color-mix(in srgb,var(--bk) 60%,transparent)}
+.jx-scene{width:180px;height:140px;stroke-width:3.5}
+.jx-offer.cards .jx-dcard{--cw:184px}
+.jx-offer.cards .jx-dcard.pick{animation:jxdeal2 .5s cubic-bezier(.2,.9,.3,1.15) both}
+.jx-offer.cards .jx-dcard.pick:nth-child(2){animation-delay:.08s}.jx-offer.cards .jx-dcard.pick:nth-child(3){animation-delay:.16s}.jx-offer.cards .jx-dcard.pick:nth-child(4){animation-delay:.24s}.jx-offer.cards .jx-dcard.pick:nth-child(5){animation-delay:.32s}
+.jx-offer.cards .jx-dcard.pick:hover .jc::after{opacity:1}
+.jx-joker.big.pick{animation:popIn .45s cubic-bezier(.3,1.6,.5,1) both}
+.jx-joker.big.pick:nth-child(2){animation-delay:.08s}.jx-joker.big.pick:nth-child(3){animation-delay:.16s}
+.jx-joker.t-rare,.jx-joker.t-mythic{overflow:hidden}
+.jx-joker.t-rare::before,.jx-joker.t-mythic::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 30%,#ffffff22 45%,transparent 60%);background-size:250% 100%;animation:foil 5s linear infinite}
+.jx-joker.t-mythic{box-shadow:0 0 18px #f07a3a44}
+.jx-starter{transition:transform .25s cubic-bezier(.3,1.6,.5,1),border-color .2s,box-shadow .2s}
+.jx-starter:hover{transform:translateY(-6px) scale(1.02)}
+.jx-starter .jg{filter:drop-shadow(0 0 10px var(--ec));transition:transform .3s cubic-bezier(.3,1.6,.5,1)}
+.jx-starter:hover .jg,.jx-starter.on .jg{transform:scale(1.18) rotate(-6deg)}
+.jx-hero h2{font-size:64px;line-height:1;text-shadow:0 0 40px #e8b85a44}
+.jx-fight{gap:10px}.jx-mid{min-height:200px}.jx-keys{margin-top:0}
+.jx-jokers.hudrow .jx-joker.emptyslot{min-height:0;padding:8px}
+.jx-handrow .jx-hand{flex:1}
+.jx-intent .jx-sword.hex,.jx-intent .jx-sword.fortify{font-size:19px;max-width:240px;line-height:1.2}.jx-intent .jx-sword.hex b,.jx-intent .jx-sword.fortify b{font-size:inherit}
+
+.jc-text.dense{font-size:.68em;gap:1px;line-height:1.1}
+/* map seals by type */
+.jx-map .jx-node.fight circle.seal{fill:#1c2128;stroke:#8d9aa8}
+.jx-map .jx-node.event circle.seal{fill:#231a31;stroke:#b79af0}
+.jx-map .jx-node.shop circle.seal{fill:#2f250e;stroke:#f0c56a}
+.jx-map .jx-node.rest circle.seal{fill:#33190b;stroke:#ff9a4a}
+.jx-map .jx-node.treasure circle.seal{fill:#2c210d;stroke:#e8b85a}
+.jx-map .jx-node.avail circle.seal{fill:color-mix(in srgb,var(--bk) 18%,#14100c);stroke-width:3;animation:none}
+.jx-map .jx-node.avail circle.ring{stroke:var(--bk);stroke-width:3;stroke-dasharray:none;r:31px;opacity:.9;animation:halo 1.4s ease-in-out infinite}
+@keyframes halo{0%,100%{stroke-width:3px;opacity:.95}50%{stroke-width:7px;opacity:.3}}
+.jx-map .jx-node.taken circle.seal{fill:#4a3a26;stroke:var(--gold);stroke-width:3}
+.jx-map .jx-node.gone{opacity:.2;filter:grayscale(.8)}
+.jx-jokers.hudrow{align-items:flex-start}
+.jx-jokers.hudrow .jx-joker.emptyslot{height:46px;min-height:0;padding:6px;opacity:.55;flex:1 1 120px;max-width:180px}
+

@@ -1,0 +1,109 @@
+/* ================= Flow (revision 4): card-by-card fight ================= */
+.jx-mid{grid-template-columns:minmax(200px,1fr) minmax(260px,320px) minmax(200px,1fr);grid-template-areas:"jok flow pow";position:relative}
+.jx-mid .jx-jokers{grid-area:jok}
+.jx-mid .jx-stage{position:absolute;inset:0;pointer-events:none;min-height:0}
+/* the Flow medallion: teal chi at ×1, heats to cinnabar and gold as the chain grows */
+.jx-flow{grid-area:flow;--flowheat:0;position:relative;justify-self:center;width:100%;max-width:320px;padding:14px 16px 12px;border-radius:24px;text-align:center;
+  background:var(--waves),radial-gradient(120% 90% at 50% 0,color-mix(in srgb,var(--chi2) calc(100% - var(--flowheat)*100%),var(--cin2)),#120d09 78%);background-size:44px 22px,auto;
+  box-shadow:inset 0 0 0 1.5px var(--gilt-dim),0 0 0 2px #0008,0 14px 34px #000b,0 0 calc(10px + var(--flowheat)*46px) color-mix(in srgb,var(--chi-glow) calc(100% - var(--flowheat)*100%),var(--cin-glow));transition:box-shadow .4s,background .4s}
+.jx-flowlbl{font-family:"Marcellus",serif;letter-spacing:.06em;color:#f3e6c8;font-size:14px;opacity:.85}
+.jx-flownum{display:flex;align-items:baseline;justify-content:center;gap:4px;line-height:.9;margin:2px 0 6px}
+.jx-flownum .x{font-size:28px;color:var(--gilt);font-weight:900}
+.jx-flownum b{font-size:calc(58px + var(--flowheat)*30px);font-weight:900;color:#fff7e6;letter-spacing:-.02em;
+  text-shadow:0 4px 0 color-mix(in srgb,var(--chi-lip) calc(100% - var(--flowheat)*100%),var(--cin-lip)),0 0 calc(8px + var(--flowheat)*30px) color-mix(in srgb,var(--chi-glow) calc(100% - var(--flowheat)*100%),#ffcf5a);transition:font-size .3s cubic-bezier(.3,1.6,.5,1)}
+.jx-flownum b.bump{animation:jxflowbump .45s cubic-bezier(.3,1.8,.5,1)}
+.jx-flownum b.reset{animation:jxflowreset .5s ease-out}
+.jx-flow.surge{animation:jxsurge .5s ease-out}
+@keyframes jxflowbump{0%{transform:scale(1)}35%{transform:scale(1.35) rotate(-3deg)}100%{transform:scale(1)}}
+@keyframes jxflowreset{0%{transform:scale(1.3);opacity:.4;filter:blur(2px)}100%{transform:scale(1);opacity:1;filter:none}}
+@keyframes jxsurge{0%{transform:scale(1)}30%{transform:scale(1.04)}100%{transform:scale(1)}}
+.jx-chain{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;min-height:24px;font-size:12px}
+.jx-chain .lnk{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#ffffff30,#0000 60%),color-mix(in srgb,var(--ec) 45%,#120d09);box-shadow:0 0 0 1.5px var(--ec),0 2px 4px #000a}
+.jx-chain .lnk.g{border-radius:7px}
+.jx-chain .lnk .jg{color:#fff!important}
+.jx-chain .lnk.pop{animation:jxlnk .4s cubic-bezier(.3,1.8,.5,1)}
+@keyframes jxlnk{0%{transform:scale(0) rotate(-90deg)}100%{transform:scale(1)}}
+.jx-flownext{min-height:38px;margin-top:6px;font-size:14px;color:#f3e6c8;opacity:0;transform:translateY(-4px);transition:.18s}
+.jx-flownext.on{opacity:1;transform:none}
+.jx-flownext .gain{color:#ffd27a;font-weight:900;font-size:18px}
+.jx-flownext .what{font-size:13px;color:#eadcc2cc}
+.jx-flownext .av{color:#fff;background:linear-gradient(90deg,#f2c46d,#5aa7e0,#6fa356,#e8543a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.jx-pop.flow{color:#ffd27a;font-size:20px;font-weight:900;text-shadow:0 2px 0 #3a2306}
+.jx-powers{grid-area:pow;display:flex;flex-wrap:wrap;gap:6px;align-items:center;align-content:center}
+.jx-powers .lbl{width:100%;color:var(--mute);font-size:12px;font-weight:800}
+.jx-power{display:inline-flex;gap:5px;align-items:center;padding:4px 10px 4px 6px;border-radius:999px;background:#120d09d9;border:1px solid color-mix(in srgb,var(--ec) 70%,#000);font-size:12px;font-weight:800;color:#f3e6c8}
+.jx-power.wiggle{animation:jxwig .5s}
+@keyframes jxwig{25%{transform:rotate(-6deg) scale(1.08)}75%{transform:rotate(5deg)}}
+/* badges for Burn, Haunt, armor, Dodge, Stone */
+.jx-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.jx-badge{font-size:13px;font-weight:900;padding:3px 9px;border-radius:999px;background:#120d09e6;border:1px solid #ffffff22;color:#f3e6c8;box-shadow:0 2px 6px #0008}
+.jx-badge.burn{border-color:#ff7a45;color:#ffc59a;box-shadow:0 0 12px #ff5a1a66}
+.jx-badge.haunt{border-color:#9a7bd1;color:#d8c8f6;box-shadow:0 0 12px #9a7bd166}
+.jx-badge.armor{border-color:#c9c2b6}
+.jx-badge.dodge{border-color:#f2c46d;color:#ffe9b8}
+.jx-badge.stone{border-color:#6fa356;color:#cfe8bf}
+.jx-badge.energy{border-color:#f2c46d;color:#ffe9b8}
+.jx-block.stone{background-image:linear-gradient(90deg,#3d5a2a calc(var(--stone)*100%),transparent 0)}
+/* energy gems: 4 a turn, carried ones have a gold rim */
+.jx-energy .gems{display:inline-flex;gap:5px;margin:0 6px}
+.jx-energy .gem{width:15px;height:15px;transform:rotate(45deg);border-radius:3px;background:linear-gradient(135deg,#fff3c4,#f2c46d 45%,#b5832a);box-shadow:0 0 0 1.5px #3a2306,0 0 10px #f2c46d88;transition:.15s}
+.jx-energy .gem.carry{box-shadow:0 0 0 2px #fff4cf,0 0 0 3.5px #b5832a,0 0 14px #ffd27a}
+.jx-energy .gem.spend{background:#4a3a1e;box-shadow:0 0 0 1.5px #3a2306;opacity:.7}
+.jx-energy .gem.empty{background:#2a2016;box-shadow:0 0 0 1.5px #3a2306}
+.jx-energy .jx-en{font-size:20px}
+/* End turn: cinnabar when the enemy will hit, teal when it's safe */
+.jx .btn.jx-endturn{display:flex;flex-direction:column;align-items:center;min-width:200px;padding:8px 22px;font-size:17px;color:#fff;border-color:#ffffff55;--b1:var(--chi1);--b2:var(--chi2);--lip:var(--chi-lip);
+  background-image:var(--waves),linear-gradient(180deg,var(--b1),var(--b2));background-size:44px 22px,auto;box-shadow:inset 0 0 0 1px var(--gilt-dim),0 5px 0 var(--lip),0 9px 16px #000a,inset 0 1px 0 #ffffff40;text-shadow:0 2px 0 #0008}
+.jx .btn.jx-endturn.danger{--b1:var(--cin1);--b2:var(--cin2);--lip:var(--cin-lip)}
+.jx .btn.jx-endturn .bv{font-size:12px;font-weight:800;opacity:.92}
+.jx .btn.jx-endturn:active{transform:translateY(3px);box-shadow:inset 0 0 0 1px var(--gilt-dim),0 2px 0 var(--lip)}
+/* hand: halves for Strike (top) and Guard (bottom), drag up or down */
+.jx-hcard{position:relative;touch-action:none}
+.jx-hcard .hk{position:absolute;left:50%;top:-20px;transform:translateX(-50%);font-size:11px;opacity:.55;z-index:3}
+.jx-halves{position:absolute;inset:3% 4%;display:flex;flex-direction:column;gap:4%;opacity:0;transition:opacity .15s;z-index:4;pointer-events:none}
+.jx-hcard:hover .jx-halves,.jx-hcard.focus .jx-halves{opacity:1;pointer-events:auto}
+.jx-halves .half{flex:1;border-radius:12px;border:0;cursor:pointer;color:#fff;font-weight:900;font-size:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-shadow:0 2px 0 #0009;
+  box-shadow:inset 0 0 0 1.5px var(--gilt-dim),0 6px 14px #000a;transition:transform .12s,filter .12s;backdrop-filter:blur(1.5px)}
+.jx-halves .half b{font-size:30px;line-height:1}
+.jx-halves .half.s{background:linear-gradient(180deg,#f07a4ae6,#8a2010e6)}
+.jx-halves .half.g{background:linear-gradient(180deg,#56707fe6,#22313be6)}
+.jx-halves .half.p{background:linear-gradient(180deg,#43c2b4e6,#0a343ce6)}
+.jx-halves .half.full{flex:0 0 46%;margin-top:auto}
+.jx-halves .half.s:not(.full){margin-bottom:0}
+.jx-halves .half:hover{transform:scale(1.04);filter:brightness(1.15)}
+.jx-hcard.focus{z-index:7}
+.jx-hcard.focus .jc{box-shadow:0 0 0 3px #ffd27a,0 0 34px #ffb84aaa,0 20px 30px #000c}
+.jx-hcard.cant .jc{filter:saturate(.25) brightness(.62)}
+.jx-hcard.cant:hover{transform:translateY(-6px)}
+.jx-why{position:absolute;left:8%;right:8%;bottom:14%;background:#120d09ee;color:#ffb2a2;font-size:12px;font-weight:800;text-align:center;border-radius:8px;padding:4px;z-index:4}
+.jx-hcard.nope{animation:jxnope .3s}
+@keyframes jxnope{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.jx-hcard.dragging{transition:none;transform:translateY(var(--dragy)) scale(1.06)!important;z-index:9}
+.jx-hcard.dragging.up .jc{box-shadow:0 0 0 3px var(--cin-glow),0 0 40px #ff7a45aa}
+.jx-hcard.dragging.down .jc{box-shadow:0 0 0 3px var(--slate-glow),0 0 40px #9fc4dcaa}
+.jx-hcard.discarding{transition:transform .26s ease-in,opacity .26s;transform:translate(260px,40px) rotate(18deg) scale(.6)!important;opacity:0}
+.jx-flycard{position:absolute;z-index:40;pointer-events:none;--cw:140px;transition:transform .38s cubic-bezier(.5,0,.8,.4),opacity .38s;filter:drop-shadow(0 12px 18px #000c)}
+.jx-flycard.s .jc{box-shadow:0 0 0 3px var(--cin-glow),0 0 30px #ff7a45}
+.jx-flycard.g .jc{box-shadow:0 0 0 3px var(--slate-glow),0 0 30px #9fc4dc}
+.jx-enemyart.wobble{animation:jxwobble .6s}
+@keyframes jxwobble{25%{transform:skewX(6deg) scale(1.03);filter:hue-rotate(30deg)}75%{transform:skewX(-5deg)}}
+/* Journey card face additions */
+.jc-cost.hp{background:radial-gradient(circle at 35% 30%,#ffd0c4,#e8543a 55%,#8a1a0c);color:#fff;font-size:.9em;width:auto;min-width:1.9em;padding:0 .3em;border-radius:999px}
+.jc-rank{margin-left:auto;flex-shrink:0;font-size:.78em;font-weight:900;color:#eadcc2;background:#0006;border-radius:6px;padding:0 .35em}
+.jc-type em{font-style:normal;color:#f0c56a}
+.jc-stats .jc-strike,.jc-stats .jc-guard,.jc-stats .jc-play{flex:1;border-radius:calc(var(--cw)*.03);text-align:center;color:#fff;font-size:.66em;font-weight:800;line-height:1;padding:3px 0 4px;letter-spacing:.04em}
+.jc-strike{background:linear-gradient(180deg,var(--cin1),var(--cin3));box-shadow:inset 0 0 0 1.5px #ffb08a}
+.jc-guard{background:linear-gradient(180deg,var(--slate2),var(--slate3));box-shadow:inset 0 0 0 1.5px var(--slate1)}
+.jc-play{background:linear-gradient(180deg,var(--chi2),var(--chi3));box-shadow:inset 0 0 0 1.5px var(--chi1);font-size:.85em!important;padding:8px 0!important}
+.jc-strike.live b,.jc-guard.live b{color:#fff4cf}
+.jc.up .jc-nm{color:#ffe08a}
+.jc-emblem{position:absolute;inset:0;display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--ec) 55%,#1a120b),#0d0906)}
+.jc-emblem .jg{filter:drop-shadow(0 0 12px var(--ec))}
+@media (max-width:900px){
+  .jx-mid{grid-template-columns:1fr;grid-template-areas:"flow" "pow" "jok"}
+  .jx-flownum b{font-size:calc(44px + var(--flowheat)*20px)}
+  .jx-halves .half b{font-size:22px}
+}
+@media (prefers-reduced-motion:reduce){.jx-flownum b.bump,.jx-flow.surge,.jx-chain .lnk.pop{animation:none}}
+@media (max-width:600px){.jx-hand{--cw:112px;padding-top:26px;min-height:190px}.jx-hcard{margin:0 -10px}.jx-flow{padding:10px 12px}.jx .btn.jx-endturn{min-width:170px}}
+

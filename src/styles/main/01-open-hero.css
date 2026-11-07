@@ -1,0 +1,30 @@
+/* ---------- Open hero ---------- */
+.hero{display:grid;grid-template-columns:auto 1fr;gap:34px;align-items:center;padding:28px}
+@media (max-width:860px){.hero{grid-template-columns:1fr;justify-items:center;text-align:center}}
+.pack{width:230px;height:360px;border-radius:14px;position:relative;cursor:pointer;user-select:none;flex-shrink:0;
+  background:linear-gradient(160deg,#e9b44c 0%,#d0612d 30%,#1b6aa6 64%,#3f8f45 100%);
+  box-shadow:0 22px 50px #000b, inset 0 0 0 2px #ffffff30;transition:transform .25s; overflow:hidden}
+.pack:hover{transform:translateY(-6px) rotate(-1.5deg)}
+.pack::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,#ffffff00 0 18px,#ffffff10 18px 19px)}
+.pack::after{content:"";position:absolute;left:0;right:0;top:0;height:24px;background:repeating-linear-gradient(90deg,#00000030 0 7px,#ffffff20 7px 14px)}
+.pack .seal{position:absolute;inset:52px 22px 74px;border-radius:50%;border:2px solid #fff6;display:grid;place-items:center}
+.pack .seal svg{width:58%;height:auto}
+.pack .ptitle{position:absolute;bottom:18px;left:0;right:0;text-align:center;font-family:"Marcellus SC",serif;color:#fff;text-shadow:0 2px 6px #0009;font-size:19px;line-height:1.15}
+.pack .ptitle small{display:block;font-family:"Nunito Sans";font-size:11px;letter-spacing:.2em;opacity:.85}
+.pack .shine{position:absolute;inset:-50%;background:linear-gradient(105deg,transparent 40%,#ffffff55 50%,transparent 60%);animation:shine 3.2s infinite;pointer-events:none}
+@keyframes shine{0%{transform:translateX(-60%)}60%,100%{transform:translateX(60%)}}
+.heroSide h2{font-size:34px;margin-bottom:6px}
+.buyRow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:20px 0 14px;max-width:760px}
+@media (max-width:600px){.buyRow{grid-template-columns:1fr}}
+.buy{border:1px solid var(--line);background:var(--bg2);color:var(--ink);border-radius:16px;padding:16px;text-align:left;transition:.15s}
+.buy:hover{border-color:#8a7458;transform:translateY(-2px)}
+.buy b{display:block;font-size:20px}
+.buy span{color:var(--mute);font-size:14px;font-weight:700}
+.buy.main{background:linear-gradient(180deg,#f3c96e,#c98d2e);color:#24170a;border-color:#f6d68a}
+.buy.main span{color:#3d2a12}
+.pityLine{font-size:14.5px;color:var(--mute)}
+.pityLine b{color:var(--ink)}
+.lastHead{display:flex;align-items:center;gap:10px;margin:26px 0 14px;flex-wrap:wrap}
+.lastHead h2{margin:0}
+.lastHead .sp{flex:1}
+

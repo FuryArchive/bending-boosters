@@ -1,0 +1,22 @@
+{
+  "arch": [
+    {"id":"WU","name":"Azorius Airbending Flyers","theme":"Evasive flyers backed by airbending tempo. Win in the air while ground attackers get bounced.","key":["Momo, Friendly Flier","Forecasting Fortune Teller","First-Time Flyer","Glider Kids","Aang, Swift Savior","Teo, Spirited Glider","Octopus Form","Airbending Lesson"]},
+    {"id":"WB","name":"Orzhov Sacrifice","theme":"Aristocrats: make bodies, sacrifice them for value, drain the opponent out.","key":["Obsessive Pursuit","Sandbender Scavengers","Callous Inspector","Corrupt Court Official","Pretending Poxbearers","Pirate Peddlers","Sold Out","Swampsnare Trap"]},
+    {"id":"RW","name":"Boros Go-Wide","theme":"Fast aggro with lots of small creatures and tokens, finishing with team pumps.","key":["Wartime Protestors","Suki, Courageous Rescuer","Yuyan Archers","Wandering Musicians","Lightning Strike","Firebending Lesson","Jet, Freedom Fighter","Iroh's Demonstration"]},
+    {"id":"GW","name":"Selesnya Allies","theme":"Assemble a team of Allies that buff each other and outsize the opponent's board.","key":["Great Divide Guide","Earth King's Lieutenant","Raucous Audience","Rebellious Captives","Kyoshi Warriors","Avatar Enthusiasts","Rocky Rebuke","Master Piandao"]},
+    {"id":"UB","name":"Dimir Card Draw","theme":"Reward drawing extra cards. Grind value, then close with evasive threats.","key":["Azula, Cunning Usurper","Raven Eagle","Knowledge Seeker","Messenger Hawk","Otter-Penguin","Waterbending Lesson","Swampsnare Trap","Lost Days"]},
+    {"id":"UR","name":"Izzet Lessons","theme":"Noncreature spells and Lessons power up a tempo deck full of cheap removal.","key":["Sokka, Bold Boomeranger","Ran and Shaw","Firebending Lesson","Lightning Strike","Abandon Attachments","Accumulate Wisdom","Combustion Technique","Waterbending Lesson"]},
+    {"id":"GU","name":"Simic Ramp","theme":"Ramp with earthbending into big creatures, with a Lesson subtheme.","key":["The Earth King","Ty Lee, Chi Blocker","Bumi, King of Three Trials","Giant Koi","Guru Pathik","Badgermole","Origin of Metalbending","Shared Roots"]},
+    {"id":"BR","name":"Rakdos Fire Nation","theme":"Fire Nation aggro that spends firebending mana during combat.","key":["The Fire Nation Drill","Firebender Ascension","Zuko, Exiled Prince","Azula, On the Hunt","Fire Nation Attacks","Boiling Rock Prison","Sold Out","Lightning Strike"]},
+    {"id":"BG","name":"Golgari Counters","theme":"Earthbending and +1/+1 counters grow a resilient board.","key":["Earthbender Ascension","Beifong's Bounty Hunters","Toph, the Blind Bandit","Long Feng, Grand Secretariat","Earth Rumble","Badgermole","Dai Li Agents","Flopsie, Bumi's Buddy"]},
+    {"id":"RG","name":"Gruul Big Power","theme":"High-power creatures that reward attacking with big bodies.","key":["Diligent Zookeeper","The Last Agni Kai","Toph, the Blind Bandit","Earth Rumble Wrestlers","The Boulder, Ready to Rumble","Combustion Man","Mongoose Lizard","Omashu City"]}
+  ],
+  "std": [
+    {"name":"Bant Airbending","share":"5.9%","note":"Brand-new archetype built around airbending combos.","key":["Appa, Steadfast Guardian","Aang, Swift Savior","Badgermole Cub"]},
+    {"name":"Allies","share":"3.2%","note":"Over half the list comes from the Avatar set.","key":["Earth King's Lieutenant","Katara, the Fearless","Great Divide Guide","Jasmine Dragon Tea Shop"]},
+    {"name":"Simic Ouroboroid","share":"10.7%","note":"Badgermole Cub replaced older two-drops.","key":["Badgermole Cub"]},
+    {"name":"Izzet Looting","share":"10.2%","note":"Picked up cheap Avatar spells.","key":["Boomerang Basics","Tiger-Seal"]},
+    {"name":"Temur Otters","share":"2.6%","note":"Spells-matter tempo deck.","key":["Badgermole Cub","Boomerang Basics"]},
+    {"name":"Boros Mobilize","share":"2.3%","note":"Token aggro with new Avatar finishers.","key":["The Legend of Roku","Firebender Ascension"]}
+  ]
+}

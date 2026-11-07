@@ -1,0 +1,9 @@
+/* ---------- card grids ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--cw),1fr));gap:18px 14px;justify-items:center}
+.cardWrap{display:flex;flex-direction:column;align-items:center;gap:6px;position:relative}
+.cardWrap .cap{font-size:13px;color:var(--mute);text-align:center;min-height:16px;font-weight:700}
+.badge{position:absolute;top:-8px;right:-8px;z-index:8;background:#2fbf63;color:#06210f;font-weight:900;font-size:11.5px;padding:3px 8px;border-radius:999px;box-shadow:0 2px 8px #0008;letter-spacing:.04em}
+.cardWrap.hit .card{outline:2px solid var(--R);outline-offset:3px}
+.cardWrap.hitM .card{outline:2px solid var(--M);outline-offset:3px;box-shadow:0 0 26px #f07a3a88}
+.cardWrap.hitS .card{outline:2px solid #fff;outline-offset:3px;box-shadow:0 0 30px #c48cffaa}
+
