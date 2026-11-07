@@ -2,7 +2,7 @@
 function refreshHeader(){
   document.getElementById('gems').textContent=$$(S.money);
   document.getElementById('spent').textContent=$$(collectionValue());
-  document.getElementById('p1cost').textContent=$$(cost(1));
+  document.getElementById('p1cost').textContent=(S.freePacks||0)>0?`free · ${S.freePacks} waiting`:$$(cost(1));
   document.getElementById('p10cost').textContent=$$(cost(10));
   const save30=cost(1)*30-cost(30);
   document.getElementById('p30cost').textContent=$$(cost(30))+(save30>0?` · save ${$$(save30)}`:'');

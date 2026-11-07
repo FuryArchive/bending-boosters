@@ -14,6 +14,10 @@ test('runBrief summarises a fresh run', () => {
   const r = newRun();
   assert.deepEqual(runBrief(r), { book: 1, floor: 0, hp: 60, maxHp: 60, deck: r.deck.length, status: 'map' });
 });
+test('runBrief only ever returns numbers for display fields', () => {
+  const b = runBrief({ book: '<img onerror=x>', floor: '2', hp: 5, maxHp: 9, deck: [1, 2], status: 'map' });
+  assert.deepEqual(b, { book: 0, floor: 2, hp: 5, maxHp: 9, deck: 2, status: 'map' });
+});
 test('abandonRun ends the run as lost and keeps the earned payout', () => {
   const r = newRun();
   r.stats.fights = 3; r.stats.elites = 1;

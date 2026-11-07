@@ -14,6 +14,17 @@ export function saveKeys(storage) {
   }
   return out.sort();
 }
+// Anything that will be rendered must never carry markup: refuse any < or > in imported text.
+var carriesMarkup = (raw) => {
+  let v;
+  try {
+    v = JSON.parse(raw);
+  } catch (e) {
+    return /[<>]/.test(raw);
+  }
+  const walk = (x) => typeof x === "string" ? /[<>]/.test(x) : x && typeof x === "object" ? Object.entries(x).some(([k, y]) => /[<>]/.test(k) || walk(y)) : false;
+  return walk(v);
+};
 var sortedKeys = (obj) => Object.fromEntries(Object.keys(obj).sort().map((k) => [k, obj[k]]));
 var checksumOf = (keys) => crc32(JSON.stringify(sortedKeys(keys)));
 export function exportSave(storage, now = Date.now()) {
@@ -34,6 +45,14 @@ export function parseSaveFile(text) {
   const valid = Object.entries(keys).every(([k, v]) => typeof v === "string" && (k.startsWith("bendingBoosters.") || k.startsWith("bb.")));
   if (!valid || checksumOf(keys) !== file.checksum) return { ok: false, error: "This save file is damaged or was edited." };
   if (typeof keys[MAIN_KEY] !== "string") return { ok: false, error: "This save has no wallet or collection in it." };
+  let main = null;
+  try {
+    main = JSON.parse(keys[MAIN_KEY]);
+  } catch (e) {
+  }
+  if (!main || typeof main !== "object" || Array.isArray(main) || Object.values(keys).some(carriesMarkup)) {
+    return { ok: false, error: "This save file is damaged or was edited." };
+  }
   return { ok: true, keys };
 }
 export function importSave(storage, keys) {

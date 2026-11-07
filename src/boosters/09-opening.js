@@ -37,6 +37,7 @@ function slotLabel(id){ return (SLOTS.find(s=>s.id===id)||{}).label||''; }
 
 let LAST=null; // {packs, showAll}
 function tryOpen(n,free=false){
+  if(!free&&n===1&&(S.freePacks||0)>0) free=true; // single opens use waiting free packs first
   if(free&&(S.freePacks||0)<n) return;
   const c=free?0:cost(n);
   if(S.money<c-1e-9){ if(BB_DEBUG) openShop(`You need ${$$(c)} but have ${$$(S.money)}. Sell some cards, earn money on the Journey, or add funds.`); else showBroke(c); return; }
@@ -158,11 +159,11 @@ function updateBottom(){
   const nNew=all.filter(p=>p.isNew).length;
   const chips=[['Mythic',cnt(p=>p.c.r==='M'),'#f07a3a'],['Rare',cnt(p=>p.c.r==='R'),'#e8c25a'],['Special',cnt(p=>isSpecial(p.c)),'#c48cff'],['Eternal',cnt(p=>p.c.treat==='etern'),'#e8c46a'],['Foil',cnt(p=>p.foil),'#7af0ff'],['New',nNew,'#2fbf63']]
     .filter(x=>x[1]).map(x=>`<span class="pill" style="border-color:${x[2]}66"><span class="rdot" style="background:${x[2]}"></span>${x[1]} ${x[0]}</span>`).join('');
-  const val=ST.packs.reduce((s,pk)=>s+(pk.value||0),0), paid=LAST&&LAST.cost||cost(ST.packs.length), pl=val-paid;
+  const val=ST.packs.reduce((s,pk)=>s+(pk.value||0),0), paid=LAST?LAST.cost:cost(ST.packs.length), pl=val-paid;
   const dupVal=dupesIn(all).reduce((s,x)=>s+x.n*sellPrice(x.c,x.foil),0);
-  stBottom.innerHTML=`<span class="pill" style="border-color:${pl>=0?'#2fbf63':'#c0504a'}">Value ${$$(val)} <span class="${pl>=0?'':'dim'}" style="color:${pl>=0?'#7ee08a':'#e8857c'}">(${pl>=0?'+':''}${$$(pl)} vs ${$$(paid)})</span></span>${chips}<span style="width:16px"></span>
+  stBottom.innerHTML=`<span class="pill" style="border-color:${pl>=0?'#2fbf63':'#c0504a'}">Value ${$$(val)} <span class="${pl>=0?'':'dim'}" style="color:${pl>=0?'#7ee08a':'#e8857c'}">${paid?`(${pl>=0?'+':''}${$$(pl)} vs ${$$(paid)})`:'(free pack)'}</span></span>${chips}<span style="width:16px"></span>
     ${dupVal>0?`<button class="btn" id="sellPackDupes">Sell extras · ${$$(dupVal)}</button>`:''}
-    <button class="btn primary" id="again1">Open another · ${$$(cost(1))}</button>${ST.multi?`<button class="btn" id="againN">Again ×${ST.packs.length} · ${$$(cost(ST.packs.length===30?30:ST.packs.length))}</button>`:''}
+    <button class="btn primary" id="again1">Open another · ${(S.freePacks||0)>0?'free':$$(cost(1))}</button>${ST.multi?`<button class="btn" id="againN">Again ×${ST.packs.length} · ${$$(cost(ST.packs.length===30?30:ST.packs.length))}</button>`:''}
     <button class="btn" id="stDone">Done</button>`;
   document.getElementById('again1').onclick=()=>{ tryOpen(1); };
   const an=document.getElementById('againN'); if(an) an.onclick=()=>tryOpen(ST.packs.length);

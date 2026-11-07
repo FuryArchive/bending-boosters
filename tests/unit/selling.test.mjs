@@ -12,6 +12,9 @@ test('protection counts all printings of a name; cheapest copies go first', () =
   const plan = planSellExtras([e('TLA:5', 'Katara', true, 8, 2, 0.5, 4), e('TLA:290', 'Katara', true, 4, 0, 2, 0)], { keep: 4, keepJourney: 12 });
   assert.deepEqual(plan, [{ key: 'TLA:5', foil: false, n: 2 }]);
 });
+test('regular copies go before foils even when the foil is cheaper', () => {
+  assert.deepEqual(planSellExtras([e('TLA:7', 'Fated Firepower', true, 13, 1, 2, 1)], { keep: 4, keepJourney: 12 }), [{ key: 'TLA:7', foil: false, n: 2 }]);
+});
 test('nothing to sell at or below protection', () => {
   assert.deepEqual(planSellExtras([e('TLA:1', 'Aang', true, 12, 0)], { keep: 4, keepJourney: 12 }), []);
 });

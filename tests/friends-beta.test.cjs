@@ -32,7 +32,7 @@ async function reloadAt(page, time) {
   await page.clock.setFixedTime(new Date(time));
   await page.reload();
 }
-const state = (page) => page.evaluate(() => ({ money: S.money, freePacks: S.freePacks, streak: (S.daily || {}).streak, starterGiven: S.starterGiven, packs: S.packs, v: S.v }));
+const state = (page) => page.evaluate(() => ({ money: S.money, freePacks: S.freePacks, streak: (S.daily || {}).streak, starterGiven: S.starterGiven, packs: S.packs, v: S.v, schema: S.schema }));
 async function group(name, fn) {
   await fn();
   groups++;
@@ -70,6 +70,15 @@ async function group(name, fn) {
       await page.waitForFunction(() => S.packs === 1);
       const s = await state(page);
       assert.equal(s.freePacks, 3); assert.equal(s.money, 55); assert.equal(s.packs, 1);
+      // The obvious buttons use free packs first, and the reveal doesn't pretend the pack was paid for.
+      await page.evaluate(() => stageClose());
+      assert.match(await page.locator('#p1cost').innerText(), /free/);
+      await page.locator('#pack').click();
+      await page.waitForFunction(() => S.packs === 2);
+      assert.deepEqual([(await state(page)).freePacks, (await state(page)).money], [2, 55]);
+      await page.evaluate(() => { ST.cards.forEach((p, i) => flipCard(i, true)); updateBottom(); });
+      assert.match(await page.locator('#again1').innerText(), /free/);
+      assert.doesNotMatch(await page.locator('#stBottom').innerText(), /vs \$6\.99/);
       await ctx.close();
     });
 
@@ -98,6 +107,18 @@ async function group(name, fn) {
       await dbg.ctx.close();
     });
 
+    await group('old build after new build', async () => {
+      const { page, ctx } = await fresh();
+      assert.equal((await state(page)).money, 55);
+      await page.goto(OLD_URL + '#debug');       // the Desktop copy, same browser storage
+      assert.equal(await page.evaluate(() => S.money), 55);
+      await page.evaluate(() => save());
+      await page.goto(GAME_URL + '#debug');
+      const s = await state(page);
+      assert.deepEqual([s.money, s.freePacks, s.streak], [55, 4, 1]); // nothing wiped, no second gift today
+      await ctx.close();
+    });
+
     await group('broke', async () => {
       const { page, ctx } = await fresh({ debug: false });
       await page.evaluate(() => { S.money = 0; S.freePacks = 0; save(); refreshHeader(); });
@@ -111,9 +132,11 @@ async function group(name, fn) {
       const { page, ctx } = await fresh({ url: OLD_URL });
       await page.evaluate(() => { S.money = 20; save(); showView('journey'); BBJ._newRun('LEGACY', 'water'); });
       assert.ok(await page.evaluate(() => localStorage.getItem('bb.run')));
+      const rawV2 = await page.evaluate(() => localStorage.getItem('bendingBoosters.v1'));
       await page.goto(GAME_URL + '#debug');
       const s = await state(page);
-      assert.equal(s.v, 3); assert.equal(s.starterGiven, true); assert.equal(s.freePacks, 1); assert.equal(s.money, 25);
+      assert.equal(s.v, 2); assert.equal(s.schema, 3); assert.equal(s.starterGiven, true); assert.equal(s.freePacks, 1); assert.equal(s.money, 25);
+      assert.equal(await page.evaluate(() => localStorage.getItem('bb.backup.main-v2')), rawV2);
       assert.ok(await page.evaluate(() => localStorage.getItem('bb.run')));
       await ctx.close();
     });
@@ -134,6 +157,12 @@ async function group(name, fn) {
       await page.locator('#sellAll').click();
       assert.match(await page.locator('#sellWarn').innerText(), /★5 → ★3/);
       assert.equal(await page.evaluate((k) => S.coll[k.jk], keys), 12); // first click only warns
+      // Card zoom offers "Sell extras" only when the same plan would sell something.
+      await page.evaluate((k) => { S.settings.keepJourney = 12; S.coll[k.jk] = 8; S.coll[k.lk] = 9; save(); openZoom(findCard(k.jk), false); }, keys);
+      assert.equal(await page.locator('#sellx').count(), 0);
+      await page.evaluate((k) => openZoom(findCard(k.lk), false), keys);
+      assert.match(await page.locator('#sellx').innerText(), /keep 4/);
+      await page.evaluate(() => document.getElementById('modal').classList.remove('on'));
       await ctx.close();
     });
 

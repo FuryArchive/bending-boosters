@@ -22,7 +22,8 @@ export function planSellExtras(entries, { keep, keepJourney }) {
       if (e.reg) lots.push({ key: e.key, foil: false, n: e.reg, value: e.regValue });
       if (e.foil) lots.push({ key: e.key, foil: true, n: e.foil, value: e.foilValue });
     }
-    lots.sort((a, b) => a.value - b.value || a.foil - b.foil || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+    // Regular copies before foils (keep the rarer finish), then cheapest first.
+    lots.sort((a, b) => a.foil - b.foil || a.value - b.value || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
     for (const lot of lots) {
       if (sell <= 0) break;
       const n = Math.min(lot.n, sell);

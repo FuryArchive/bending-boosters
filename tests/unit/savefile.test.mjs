@@ -43,6 +43,16 @@ test('rejects bad files with the exact messages', () => {
   const empty = exportSave(memStorage({ 'bb.run': 'R' }), 0);
   assert.equal(parseSaveFile(JSON.stringify(empty)).error, 'This save has no wallet or collection in it.');
 });
+test('rejects saves carrying HTML (an edited file could inject script)', () => {
+  const evil = exportSave(memStorage({ 'bendingBoosters.v1': JSON.stringify({ v: 2, since: '<img src=x onerror=alert(1)>' }) }), 0);
+  assert.equal(parseSaveFile(JSON.stringify(evil)).error, 'This save file is damaged or was edited.');
+  const evilRun = exportSave(memStorage({ 'bendingBoosters.v1': '{"v":2}', 'bb.run': JSON.stringify({ book: '<b>x</b>' }) }), 0);
+  assert.equal(parseSaveFile(JSON.stringify(evilRun)).error, 'This save file is damaged or was edited.');
+});
+test('rejects a main save that is not a JSON object', () => {
+  const bad = exportSave(memStorage({ 'bendingBoosters.v1': '42' }), 0);
+  assert.equal(parseSaveFile(JSON.stringify(bad)).error, 'This save file is damaged or was edited.');
+});
 test('failed import restores the previous save', () => {
   const b = memStorage({ 'bendingBoosters.v1': 'OLD', 'bb.run': 'OLDRUN' }, { failOnSet: 'bb.run' });
   const r = importSave(b, { 'bendingBoosters.v1': 'NEW', 'bb.run': 'NEWRUN' });

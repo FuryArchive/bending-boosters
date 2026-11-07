@@ -210,7 +210,8 @@ export function deserialize(str) {
   return run;
 }
 export function runBrief(run) {
-  return { book: run.book, floor: run.floor, hp: run.hp, maxHp: run.maxHp, deck: run.deck.length, status: run.status };
+  const n = (x) => +x | 0; // display fields only ever render as numbers
+  return { book: n(run.book), floor: n(run.floor), hp: n(run.hp), maxHp: n(run.maxHp), deck: Array.isArray(run.deck) ? run.deck.length : 0, status: run.status };
 }
 export function abandonRun(run) {
   run.status = "lost";
