@@ -7,12 +7,13 @@ import { enemyForNode } from "../data/enemies.js";
 import { jokerById } from "../data/jokers.js";
 import { startCharms } from "./offers.js";
 import { makeReward, openNode } from "./nodes.js";
+import { ECONOMY } from "../economy/config.js";
 
 var START_HP = 60;
 var START_GOLD = 20;
 var SAVE_VERSION = 2;
 var GOLD = { fight: [12, 18], elite: [30, 40], boss: [60, 60] };
-var PAYOUT = { fight: 1, elite: 2.5, boss: [6, 10, 14], win: 10 };
+var PAYOUT = ECONOMY.journeyPayout;
 var liveJokers = (run) => run.jokers.map((j) => ({ ...jokerById(j.id), stars: j.stars || 1 }));
 export function createRun({ seed, nation = "water", ownedKeys = [], ownedStars = {}, startCharmId }) {
   const run = {
