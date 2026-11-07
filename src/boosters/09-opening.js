@@ -36,12 +36,14 @@ function tile(k,v,s){ return `<div class="stat"><div class="k">${k}</div><div cl
 function slotLabel(id){ return (SLOTS.find(s=>s.id===id)||{}).label||''; }
 
 let LAST=null; // {packs, showAll}
-function tryOpen(n){
-  const c=cost(n);
-  if(S.money<c-1e-9){ openShop(`You need ${$$(c)} but have ${$$(S.money)}. Sell some cards, earn money on the Journey, or add funds.`); return; }
+function tryOpen(n,free=false){
+  if(free&&(S.freePacks||0)<n) return;
+  const c=free?0:cost(n);
+  if(S.money<c-1e-9){ if(BB_DEBUG) openShop(`You need ${$$(c)} but have ${$$(S.money)}. Sell some cards, earn money on the Journey, or add funds.`); else showBroke(c); return; }
+  if(free){ S.freePacks-=n; S.freeOpened=(S.freeOpened||0)+n; }
   S.money=Math.round((S.money-c)*100)/100; S.packSpend+=c;
   const packs=[]; for(let i=0;i<n;i++) packs.push(openPack());
-  save(); refreshHeader();
+  save(); refreshHeader(); renderFreeButton();
   // start downloading images right away, while the tear animation plays
   const flat=packs.flat();
   if(n===1){ preload(flat.map(p=>p.c),'normal'); preload(flat.filter(p=>tier(p)||p.foil).map(p=>p.c),'large'); }

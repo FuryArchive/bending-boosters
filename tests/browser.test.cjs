@@ -13,7 +13,8 @@ const url=pathToFileURL(source).href;
   await ctx.route('https://**/*',r=>r.abort());
   const page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.stack));
   await page.goto(target+'#debug');
-  await page.evaluate(()=>{S.settings.sound=false;S.settings.real=false;S.settings.fast=true;save()});
+  // Pin the pre-M1 $50 wallet: these checks test payout arithmetic; daily gifts are covered by friends-beta.test.cjs.
+  await page.evaluate(()=>{S.settings.sound=false;S.settings.real=false;S.settings.fast=true;S.money=50;S.freePacks=0;save()});
   return {page,ctx};
  }
  async function doomed(page){
@@ -211,7 +212,8 @@ const url=pathToFileURL(source).href;
    // Even a stale terminal run from before that reset must not pay into the new wallet.
    await page.evaluate(old=>{const r=JSON.parse(old);r.status='lost';r.stats.fights=3;localStorage.setItem('bb.run',JSON.stringify(r))},old);
    await page.reload();
-   assert.deepEqual(await page.evaluate(()=>({money:S.money,runs:S.journey?.runs||0,run:BBJ._state.run})),{money:50,runs:0,run:null});
+   // $55 = fresh $50 + the daily gift that a post-reset first launch receives; a leaked stale payout would make it $58.
+   assert.deepEqual(await page.evaluate(()=>({money:S.money,runs:S.journey?.runs||0,run:BBJ._state.run})),{money:55,runs:0,run:null});
    assert.equal(await page.locator('#jxResume').count(),0);
    console.log('PASS committed reset invalidates stale active/terminal saves when second-key removal fails');await ctx.close();
   }

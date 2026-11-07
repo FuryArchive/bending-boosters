@@ -1,6 +1,7 @@
 /* ================= Shop ================= */
 const OFFERS=[10,25,50,100,250];
 function openShop(msg){
+  if(!BB_DEBUG) return; // deposits bypass the earned-money loop; debug only
   document.getElementById('mbody').innerHTML=`<h2>Add funds</h2><p class="muted">${msg||'Simulated deposits. No real money moves. Deposits are tracked so Stats can show your true profit or loss.'}</p>
    <div class="shopGrid">${OFFERS.map(o=>`<div class="offer"><div class="g">$${o}</div><div class="muted" style="font-size:12.5px">≈${Math.floor(o/S.settings.price)} packs</div><button class="btn primary" data-o="${o}" style="width:100%;margin-top:8px">Deposit</button></div>`).join('')}</div>
    <p class="note" style="margin-top:12px">Other ways to earn: sell extra cards (Collection tab). Journey runs pay out when the run ends.</p>`;

@@ -4,4 +4,5 @@ Object.assign(DEFAULTS, {
   buy: BBJ.ECONOMY.sellRatePercent, keep: BBJ.ECONOMY.keepDefault, keepJourney: BBJ.ECONOMY.keepJourneyDefault
 });
 load(); initNameKeys(); refreshHeader(); imgStatus(); loadImgIndex();
+applyDebugVisibility(); renderGiftPanel(applyGifts());
 const h0=(location.hash||'').slice(1); if(['collection','decks','journey','stats','odds','settings'].includes(h0)) showView(h0);

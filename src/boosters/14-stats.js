@@ -11,7 +11,7 @@ function renderStats(){
     tile('Completion',(have/uniq.size*100).toFixed(1)+'%',`${have}/${uniq.size} unique`)+
     tile('Pity triggers',S.pityHits,S.settings.pity?`at ${S.settings.pity}`:'pity off')+
     (J=>tile('Journey runs',J.runs,`${J.wins} won`)+tile('Best floor',J.bestFloor?`${J.bestFloor} / 45`:'—',J.bestHit?`best hit ${J.bestHit.toLocaleString()}`:'')+tile('Avatar States',J.avatar,'in Journey runs'))(S.journey||{runs:0,wins:0,bestFloor:0,bestHit:0,avatar:0});
-  const cv=collectionValue(), net=S.money+cv-S.deposited, ev=packEV().total;
+  const cv=collectionValue(), ev=packEV().total, earned=(S.runIncome||0)+(S.soldIncome||0)+(S.dailyIncome||0), bal=earned-S.packSpend;
   document.getElementById('moneyTiles').innerHTML=
     tile('Spent on packs',$$(S.packSpend),P?`${$$(S.packSpend/P)} per pack`:'')+
     tile('Value pulled',$$(S.valuePulled),P?`${$$(S.valuePulled/P)} per pack (EV ${$$(ev)})`:'')+
@@ -19,7 +19,8 @@ function renderStats(){
     tile('Collection value',$$(cv),'at current prices')+
     tile('Sold',$$(S.soldIncome),`${S.sold.toLocaleString()} cards`)+
     tile('Journey winnings',$$(S.runIncome||0),`${(S.journey||{}).runs||0} runs`)+
-    tile('Net profit/loss',`<span style="color:${net>=0?'#7ee08a':'#e8857c'}">${$$(net)}</span>`,'wallet + collection − deposits')+
+    tile('Earned',$$(earned),'Journey + sales + daily gifts')+
+    tile('Earned vs spent',`<span style="color:${bal>=0?'#7ee08a':'#e8857c'}">${$$(bal)}</span>`,'earned − spent on packs')+
     tile('Best pull',S.best?$$(S.best.v):'—',S.best?esc((findCard(S.best.k)||{}).name||'')+(S.best.foil?' ★':''):'');
   // cumulative chart
   const vh=S.valHist; const pts=vh.length;

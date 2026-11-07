@@ -1,0 +1,6 @@
+/* M1 friends beta: gifts, free packs, resume card, tips, sell warnings. */
+[hidden]{display:none!important}
+.giftPanel{margin:16px 0 4px;padding:14px 18px;border-color:#e8c17c66;background:linear-gradient(135deg,#2a3a2e,#16231f);display:grid;gap:4px;font-size:15px}
+.giftPanel b{color:#ffe1a9}
+.buy.free{border-color:#7ee08a88;background:linear-gradient(135deg,#1f3b2a,#173024)}
+.buy.free b{color:#bff5c8}

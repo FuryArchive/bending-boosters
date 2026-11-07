@@ -23,7 +23,8 @@
       "src/styles/main/17-decks.css"
     ],
     "visual-edition": [
-      "src/styles/visual-edition.css"
+      "src/styles/visual-edition.css",
+      "src/styles/friends-beta.css"
     ],
     "boosters": [
       "src/boosters/00-prelude.js",
@@ -57,7 +58,8 @@
       "src/boosters/16-decks.js",
       "src/boosters/17-journey-mount.js",
       "src/boosters/18-settings.js",
-      "src/boosters/19-wire-up.js"
+      "src/boosters/19-wire-up.js",
+      "src/boosters/20-gifts.js"
     ],
     "journey": [
       {
