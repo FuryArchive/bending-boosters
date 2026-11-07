@@ -2,601 +2,706 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make the current TLA game shareable with friends. That means an earned-money loop (starter gift, daily pack and streak cash, star-protected selling, "+ Add funds" debug-only), first-time tips, first-class save/resume, save export/import, a hosted link, git, and two cosmetic fixes.
+**Goal:** Turn the recovered TLA game into a shareable friends beta: an earned economy with starter and daily gifts, star-protected selling, first-time tips, first-class resume, save export/import, hosting, and the two cosmetic fixes.
 
 **Architecture:**
-- New rules go into pure ES modules (`src/economy/`, `src/save/`, `src/meta/`), unit-tested directly in Node.
-- They reach the classic pack-simulator script through new exports on the global `BBJ`.
-- Startup moves from the end of the pack-simulator script into `src/boot.js`, which runs after `BBJ` exists, so boot code can use those modules.
-- The pack-simulator files only get thin UI glue.
+- New logic lives in small ES modules (`src/economy/`, `src/save/`, `src/ui/tips.js`, plus additions to `src/engine/run.js`). They are bundled into the existing `BBJ` IIFE and re-exported from `src/ui/index.js`.
+- The classic pack-simulator script (`src/boosters/`) only glues DOM and the `S` state to them, through `BBJ.*`.
+- Startup moves into a post-bundle `src/boot.js` so load-time code can use `BBJ`.
+- Pure logic is tested with `node:test`; game wiring is tested with Playwright.
 
-**Tech Stack:**
-- Plain JS, no new runtime dependencies.
-- `node:test` for unit tests.
-- Playwright 1.64.1 with Chromium for browser tests (its `page.clock` API stands in for the date).
-- Zero-dependency build: `tools/build.mjs`.
+**Tech Stack:** vanilla JS (ES modules + classic script fragments), `tools/build.mjs`, `node:test` (Node 22), Playwright 1.64.1 with system Chromium (`CHROMIUM_PATH`), GitHub Actions Pages.
 
-**Spec:** `docs/superpowers/specs/2026-11-07-bending-boosters-design.md`, sections 3, 4 and 10. Also read `README.md` ("How the build works") and `AGENTS.md`.
+**Spec:** `docs/superpowers/specs/2026-11-07-bending-boosters-design.md`, sections 3, 4, 10 and the M1 row of 11.
 
 ## Global Constraints
 
-- **Starting money:** $50 bankroll and 3 free Play Boosters on first launch.
-- **Daily pack:** 1 free Play Booster per **local calendar day**. Missed days accrue, up to 3 packs.
-- **Streak cash:** day 1 $5, day 2 $5, day 3 $10, day 4 $10, day 5 $15, day 6 $15, day 7+ $20. Missing a calendar day resets the streak to day 1.
-- **Journey:** always free to enter. Payouts stay fight $1, elite $2.50, bosses $6/$10/$14, win +$10.
-- **Selling:** 60% of market. "Sell all extras" never takes a **Journey-eligible** card (by name, across printings) below **12** copies. Other cards keep the setting (default **4**). If the Journey protection is lowered below 12, list each star drop before confirming.
-- **Debug-only:** "+ Add funds" appears only in debug mode (`#debug` in the URL). The same goes for the economy settings that bypass the loop: pack price, box price, sell %, starting money.
-- **One place for economy numbers:** they live in one data module, `src/economy/config.js`.
-- **Day rules:** all per-day rules take their date from `src/economy/clock.js`. Pure functions receive the time as a parameter. Browser tests set the date with Playwright `page.clock`.
-- **Storage keys:** existing localStorage keys keep their names (`bendingBoosters.v1`, `bb.run`, `bb.prices`, `bb.imgidx`). The only new key is `bb.backup`.
-- **Single file:** the game stays one self-contained HTML. No new network requests.
-- **Journey module rules:** unique top-level names; `import { … } from "./x.js";` at the top followed by one blank line; `export` only at line start; every new module listed in `build.config.json`. `npm run check` must pass.
-- **Existing tests:** the existing suites (combat, progression, browser, visual) stay green. Change an existing expectation only where it encodes the old economy, and say why in the commit message.
-- **Desktop copy:** never write to the player's Desktop copy.
-- **Commit messages** end with:
-  ```
-  Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-  Claude-Session: https://claude.ai/code/session_01CnmRrhqKWkiVRVG61PBTX7
-  ```
+- One self-contained HTML; no server; play money only; keep the fan attribution in Settings.
+- Journey module rules (README, "How the build works"):
+  - unique top-level names across all modules;
+  - only `import { a } from "./x.js";` at the top, followed by one blank line;
+  - `export` only at the start of a top-level declaration line;
+  - list new modules in `build.config.json`;
+  - `npm run check` must pass.
+- New logic goes into ES modules. `src/boosters/*.js` only does glue (DOM, `S`, `save()`).
+- Economy values from the spec:
+  - starting bankroll **$50**;
+  - starter gift **3 free Play Boosters** on first launch;
+  - **1 free Play Booster per local calendar day; unclaimed packs bank up to 3**;
+  - streak cash **day 1 $5, day 2 $5, day 3 $10, day 4 $10, day 5 $15, day 6 $15, day 7 and later $20**; **missing a calendar day resets the streak to day 1**;
+  - **Journey is always free to enter**;
+  - selling pays **60% of market**;
+  - **Journey-eligible cards are never sold below 12 copies**; other cards keep the user's setting (**default 4**).
+- **"+ Add funds" only in debug mode (`#debug`).**
+- Local date for gifts and streaks. All per-day logic goes through `src/economy/clock.js`.
+- Every save change is versioned. Migrations back up the old value before writing.
+- Tooling never writes to the Desktop copy.
+- Existing suites (combat, progression, browser, visual) stay green. They are edited only where a task states an intended behaviour change.
+- Run commands from the project root. Browser suites need `CHROMIUM_PATH` if `/usr/bin/chromium` is absent.
+
+## Decisions beyond the spec (owner confirms in plan review)
+
+1. **First launch counts as streak day 1.** A new player gets 3 starter packs, 1 daily pack and $5, so starts with $55 and 4 free packs.
+2. **The daily record survives a reset** ("Reset everything" and "Reset with seed"), so resets can't farm daily cash. A reset does re-grant the 3 starter packs.
+3. **Pack price, box price, buylist % and starting money become debug-only settings,** for the same reason "+ Add funds" does.
+4. **Export skips** the rebuildable caches `bb.imgidx` and `bb.prices`, and `bb.backup` itself.
+5. **Tips are off in `#debug` unless the hash contains `tips`,** which keeps the automated suites deterministic. The gift banner sits inline in the page and never blocks input.
+6. **Free packs** open from the big pack and from an "Open free pack" button. "Open 1/10/30" always pay.
+7. **Abandoning a run pays like a defeat:** you get the fight, elite and boss money already earned.
+8. **Journey payout values stay in `src/engine/run.js` (`PAYOUT`)**, because the test harness evaluates the engine region on its own. `ECONOMY` holds the M1 numbers; the M4 balance pass can consolidate the two.
 
 ## Review Focus
 
-1. **The clock goes backwards** (timezone travel, manual clock change) or the page reloads the same day. That must pay nothing and leave the streak alone. *Pinned in Task 2 (`claimDaily` backwards/same-day tests) and Task 4 (browser same-day reload).*
-2. **A bad import file:** not JSON, someone else's JSON, edited (checksum mismatch), from a newer version, or missing the main save. It must be rejected with a clear message, and the current save left untouched. *Pinned in Task 6.*
-3. **Storage write fails** during the daily claim or import. The claim must be retried on a later load and never credited twice; an import must never be half-applied. *Pinned in Task 4 (failing `setItem` at boot) and Task 6 (failing `setItem` mid-import restores the backup).*
-4. **An existing player's save from the Desktop build** (main save v2 plus an in-progress Journey run). It must migrate to v3 without a starter gift, receive the daily gift, and resume the run. *Pinned in Task 3 (unit) and Task 4 (browser, using a v2 save from `history/3-visual-edition.html`).*
-5. **A tip on screen during play** must not block cards, End turn or map nodes. *Pinned in Task 8 (click End turn while the fight tip is open).*
+1. **System clock moved backwards** (manual change, timezone travel): no grant, no streak change, no crash. Task 2.
+2. **Day counting across month and year ends and DST changes:** exact whole-day gaps. Task 2.
+3. **Importing a foreign, truncated or tampered file:** a clear error, and the current save is untouched. Task 9.
+4. **A storage write failing during a daily grant or an import:** nothing granted twice, nothing half-written, and the player is told. Tasks 4 and 9.
+5. **Odd v2 saves** (missing settings or fields): they migrate without a crash, and the old `S.v!==2` branch never wipes the wallet. Task 3.
 
----
+## File Structure
 
-## File map
-
-| File | Responsibility |
+| Path | Responsibility |
 |---|---|
-| `src/economy/config.js` | **new.** `ECONOMY` table: every economy number |
-| `src/economy/clock.js` | **new.** `localDay`, `utcDay`, `daysBetween` |
-| `src/economy/daily.js` | **new.** `claimDaily`: daily pack plus streak cash rules |
-| `src/economy/selling.js` | **new.** `planSellExtras`, `starDrops` |
-| `src/save/migrate.js` | **new.** main-save versioning: `MAIN_SAVE_VERSION`, `migrateMain`, `freshMainFields` |
-| `src/save/crc32.js` | **new.** `crc32` |
-| `src/save/savefile.js` | **new.** export/parse/import of all save keys |
-| `src/meta/tips.js` | **new.** `TIPS` data |
-| `src/ui/tips.js` | **new.** tip card rendering: `initTips`, `showTip`, `resetTips` |
-| `src/ui/run-store.js` | **new.** `RUN_KEY`, `readSavedRun` |
-| `src/boot.js` | **new.** startup sequence (moved from `19-wire-up.js`) plus gifts, tips init and resume card |
-| `src/boosters/20-gifts.js` | **new.** `applyGifts`, `renderGiftPanel`, free-pack button |
-| `src/boosters/21-resume.js` | **new.** `renderResumeCard` on the home screen |
-| `src/boosters/22-savefile.js` | **new.** Settings export/import/reset-tips UI glue |
-| `src/styles/friends-beta.css` | **new.** styles for the gift panel, resume card, tips and sell warning |
-| `src/engine/run.js` | payouts from `ECONOMY`; new `runBrief`, `abandonRun` |
-| `src/ui/journey.js` | uses `run-store`; in-page two-step Abandon that pays out; `api.resume()`; tip hooks; "Empty charm slot" |
-| `src/ui/index.js` | new `BBJ` exports |
-| `src/boosters/03-state.js` | `freshState` v3 fields; `load()` calls `BBJ.migrateMain` |
-| `src/boosters/09-opening.js` | `tryOpen(n, free)`; not-enough-money dialog; reveal tip |
-| `src/boosters/11-shop.js` | `openShop` debug-only; `dupesIn` uses `BBJ.planSellExtras` |
-| `src/boosters/12-collection.js` | sell-all star-drop warning |
-| `src/boosters/14-stats.js` | "Earned" and "Earned vs spent" tiles |
-| `src/boosters/15-header.js` | tip hooks in `showView` |
-| `src/boosters/18-settings.js` | Journey keep input; economy inputs debug-only |
-| `src/boosters/19-wire-up.js` | startup lines removed (moved to `src/boot.js`) |
-| `src/index.html` | gift panel, free-pack button, resume container, settings controls, `boot` slot |
-| `build.config.json` | new modules, booster files, `boot` slot, stylesheet |
-| `tests/unit/*.test.mjs` | **new.** unit tests (`node --test tests/unit/`) |
-| `tests/friends-beta.test.cjs` | **new.** browser tests for M1 |
-| `.github/workflows/pages.yml` | **new.** build and deploy to GitHub Pages |
-| `package.json`, `README.md` | scripts, docs |
+| `src/boot.js` (replaces `src/journey-recovery.js`) | Startup sequence, run after `BBJ` exists |
+| `src/economy/clock.js` | `localDayKey`, `daysBetween` |
+| `src/economy/config.js` | `ECONOMY` value table |
+| `src/economy/daily.js` | `dailyGrant` (pure) |
+| `src/economy/sell.js` | `sellExtrasPlan` (pure) |
+| `src/save/crc32.js` | `crc32` |
+| `src/save/migrate.js` | `MAIN_SAVE_VERSION`, `migrateMain` |
+| `src/save/transfer.js` | `collectSave`, `checkSaveFile`, `applySaveFile` |
+| `src/ui/tips.js` | tip copy and the tip bubble |
+| `src/boosters/20-gifts.js` | glue: gifts, free packs, the broke modal, the home resume card |
+| `src/styles/main/18-friends-beta.css` | banner, free-pack button, broke modal, tip bubble, home resume card |
+| `tests/unit/*.test.mjs` | pure-module tests |
+| `tests/m1.test.cjs` | Playwright scenarios for this milestone |
+| `.github/workflows/pages.yml` | build, quick tests, publish |
 
-**Module order in `build.config.json` → `slots.journey[0].journey.modules`:**
-- Insert `src/economy/config.js` **immediately before** `src/engine/run.js`. It is then inside the engine region that `tests/harness/engine.cjs` evaluates, which `run.js` needs.
-- Insert, in this order, **immediately before** `src/ui/journey.js`:
-  `src/economy/clock.js`, `src/economy/daily.js`, `src/economy/selling.js`, `src/save/migrate.js`, `src/save/crc32.js`, `src/save/savefile.js`, `src/meta/tips.js`, `src/ui/tips.js`, `src/ui/run-store.js`
-
-**New `BBJ` exports (re-exported from `src/ui/index.js`):**
-`ECONOMY`, `localDay`, `claimDaily`, `planSellExtras`, `starDrops`, `isRunCard`, `MAIN_SAVE_VERSION`, `migrateMain`, `freshMainFields`, `exportSave`, `parseSaveFile`, `importSave`, `readSavedRun`, `runBrief`, `initTips`, `showTip`, `resetTips`
+New Journey modules go in `build.config.json` **after `src/ui/fx.js` and before `src/ui/journey.js`**, in this order: `clock`, `config`, `daily`, `sell`, `crc32`, `migrate`, `transfer`, `tips`. That keeps them outside the engine region the test harness extracts.
 
 ---
 
-### Task 1: Repository baseline and unit-test runner
+### Task 1: Repository baseline and boot sequence
 
 **Files:**
-- Modify: `package.json`
-- Create: `tests/unit/smoke.test.mjs`
+- Create: `tests/unit/build-layout.test.mjs`
+- Rename: `src/journey-recovery.js` → `src/boot.js`
+- Modify: `src/boosters/19-wire-up.js`, `build.config.json`, `src/index.html`, `package.json`
 
 **Interfaces:**
-- Produces: `npm run test:unit` runs `node --test tests/unit/`. It is included in both `test` and `test:quick`. Git tag `recovered-baseline` marks the byte-identical recovery.
+- Produces: slot `boot` (was `journey-recovery`), which holds the whole startup.
+- Produces: `npm run test:unit` → `node --test "tests/unit/*.test.mjs"`, included in `test` and `test:quick` right after `check`.
 
-- [ ] **Step 1:** `git init -b main` in the project root, then make the first commit containing all current files: `chore: recovered source baseline`. Then run `git tag recovered-baseline`.
-- [ ] **Step 2: Write the smoke test** `tests/unit/smoke.test.mjs`:
+- [ ] **Step 1: Baseline commit**
 
-```js
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { payout } from '../../src/engine/run.js';
-test('engine modules import natively', () => {
-  assert.equal(typeof payout, 'function');
-});
-```
+  Run `node tools/build.mjs --check history/3-visual-edition.html` (expect "identical"), then:
+  ```bash
+  git init -b main && git add -A && git commit -m "chore: recovered source baseline (build == history/3-visual-edition.html)"
+  ```
 
-- [ ] **Step 3:** In `package.json`, add `"test:unit": "node --test tests/unit/"`. Insert `node --test tests/unit/ &&` right after `node tools/check-modules.mjs &&` in both `test` and `test:quick`.
-- [ ] **Step 4: Verify.** Run `npm run test:quick`. Expected: build OK, `modules ok`, unit `# pass 1`, combat `# pass 46`, progression `# pass 36`. Then run `node tools/build.mjs --check history/3-visual-edition.html`. Expected: `identical`.
-- [ ] **Step 5:** Commit: `test: add unit test runner`.
+- [ ] **Step 2: Write the failing test** in `tests/unit/build-layout.test.mjs`:
+  ```js
+  import test from 'node:test'; import assert from 'node:assert/strict';
+  import { build } from '../../tools/build.mjs';
+  test('startup runs after the module bundle', () => {
+    const { html } = build();
+    const bundle = html.indexOf('var BBJ = (() => {'), boot = html.indexOf('load(); initNameKeys();');
+    assert.ok(bundle > 0 && boot > bundle);
+  });
+  ```
 
----
+- [ ] **Step 3: Run it.** `node --test "tests/unit/*.test.mjs"` should FAIL (boot index < bundle index).
 
-### Task 2: Economy config, clock and daily rules (pure)
+- [ ] **Step 4: Implement.**
+  - Move the last two lines of `src/boosters/19-wire-up.js` (`load(); …loadImgIndex();` and the `h0`/`showView(h0)` line) to the top of `src/boot.js`, above the existing recovery block.
+  - Rename the slot in `build.config.json` and the `<!-- @slot journey-recovery -->` marker in `src/index.html` to `boot`.
+  - Add the `test:unit` script.
+
+- [ ] **Step 5: Verify.** `npm test` → every suite passes, including the new unit test.
+
+- [ ] **Step 6: Commit.** `git commit -am "refactor: run startup after the module bundle (src/boot.js)"`
+
+### Task 2: Clock and daily grant logic
 
 **Files:**
-- Create: `src/economy/config.js`, `src/economy/clock.js`, `src/economy/daily.js`, `tests/unit/daily.test.mjs`
-- Modify: `src/engine/run.js:15` (PAYOUT), `build.config.json`
+- Create: `src/economy/clock.js`, `src/economy/config.js`, `src/economy/daily.js`, `tests/unit/clock.test.mjs`, `tests/unit/daily.test.mjs`
+- Modify: `build.config.json`, `src/ui/index.js` (re-export all four names below)
+
+**Interfaces (produces):**
+- `localDayKey(date = new Date()): string`: local calendar date as `"YYYY-MM-DD"`.
+- `daysBetween(fromKey: string, toKey: string): number`: whole days, `to − from`, computed from `Date.UTC` of the key parts (DST-proof).
+- `ECONOMY = { startMoney: 50, starterPacks: 3, dailyPackBank: 3, streakCash: [5, 5, 10, 10, 15, 15, 20], protectCopies: 12, keepDefault: 4 }`
+- `dailyGrant(record: {last: string, streak: number} | null, today: string): {packs, cash, streak, record}`
+  - no record → day 1;
+  - same day → nothing;
+  - gap 1 → streak + 1;
+  - gap > 1 → streak 1, packs `min(ECONOMY.dailyPackBank, gap)`;
+  - gap < 0 → nothing, record unchanged;
+  - cash = `streakCash[min(streak, 7) − 1]`.
+
+- [ ] **Step 1: Write the failing tests.**
+  ```js
+  // tests/unit/clock.test.mjs
+  import test from 'node:test'; import assert from 'node:assert/strict';
+  import { daysBetween, localDayKey } from '../../src/economy/clock.js';
+  test('daysBetween across month, year and DST boundaries', () => {
+    assert.equal(daysBetween('2026-01-31', '2026-02-01'), 1);
+    assert.equal(daysBetween('2026-12-31', '2027-01-01'), 1);
+    assert.equal(daysBetween('2026-03-07', '2026-03-09'), 2);
+    assert.equal(daysBetween('2026-10-31', '2026-11-02'), 2);
+    assert.equal(daysBetween('2026-11-07', '2026-11-05'), -2);
+  });
+  test('localDayKey uses the local calendar date', () =>
+    assert.equal(localDayKey(new Date(2026, 0, 5, 23, 59)), '2026-01-05'));
+
+  // tests/unit/daily.test.mjs
+  import test from 'node:test'; import assert from 'node:assert/strict';
+  import { dailyGrant } from '../../src/economy/daily.js';
+  const rec = (last, streak) => ({ last, streak });
+  test('first visit is streak day 1', () =>
+    assert.deepEqual(dailyGrant(null, '2026-11-07'), { packs: 1, cash: 5, streak: 1, record: rec('2026-11-07', 1) }));
+  test('same day grants nothing', () =>
+    assert.deepEqual(dailyGrant(rec('2026-11-07', 1), '2026-11-07'), { packs: 0, cash: 0, streak: 1, record: rec('2026-11-07', 1) }));
+  test('consecutive days climb the cash ladder and cap at $20', () => {
+    let r = null; const cash = [];
+    for (let d = 1; d <= 9; d++) { const g = dailyGrant(r, `2026-11-0${d}`); cash.push(g.cash); r = g.record; }
+    assert.deepEqual(cash, [5, 5, 10, 10, 15, 15, 20, 20, 20]);
+  });
+  test('a missed day resets the streak and banks packs up to 3', () => {
+    assert.deepEqual(dailyGrant(rec('2026-11-01', 5), '2026-11-03'), { packs: 2, cash: 5, streak: 1, record: rec('2026-11-03', 1) });
+    assert.equal(dailyGrant(rec('2026-11-01', 5), '2026-11-20').packs, 3);
+  });
+  test('clock moved backwards grants nothing and keeps the record', () =>
+    assert.deepEqual(dailyGrant(rec('2026-11-07', 4), '2026-11-05'), { packs: 0, cash: 0, streak: 4, record: rec('2026-11-07', 4) }));
+  ```
+
+- [ ] **Step 2: Run them.** `node --test "tests/unit/*.test.mjs"` should FAIL with module not found.
+
+- [ ] **Step 3: Implement** the three modules with the signatures above. Register them in `build.config.json` and re-export them from `src/ui/index.js`.
+
+- [ ] **Step 4: Verify.** `npm run test:quick` → PASS (unit, check, combat, progression).
+
+- [ ] **Step 5: Commit.** `git add -A && git commit -m "feat(economy): day clock and daily grant rules"`
+
+### Task 3: Main save v3 migration
+
+**Files:**
+- Create: `src/save/migrate.js`, `tests/unit/migrate.test.mjs`, `tests/m1.test.cjs`
+- Modify: `src/boosters/03-state.js`, `build.config.json`, `src/ui/index.js`, `package.json` (append `&& node tests/m1.test.cjs` to `test`)
 
 **Interfaces:**
-- Produces:
-  - `export var ECONOMY = { startingBankroll: 50, starterPacks: 3, dailyPackMaxAccrual: 3, streakCash: [5, 5, 10, 10, 15, 15, 20], packPrice: 6.99, boxPrice: 149.99, sellRatePercent: 60, keepDefault: 4, keepJourneyDefault: 12, journeyPayout: { fight: 1, elite: 2.5, boss: [6, 10, 14], win: 10 } }`
-  - `localDay(ms = Date.now()) -> "YYYY-MM-DD"` (local time); `utcDay(ms = Date.now()) -> "YYYY-MM-DD"`
-  - `daysBetween(fromDay, toDay) -> integer`: `toDay − fromDay` in calendar days, negative when backwards. Compute it from `Date.UTC` of both strings, so DST can't affect it.
-  - `claimDaily(daily, today) -> { daily: { last, streak }, claimed: boolean, cash: number, packs: number, streakDay: number }`. Input `daily` is `{ last: string|null, streak: number }`. It never mutates its input.
+- Produces `MAIN_SAVE_VERSION = 3`.
+- Produces `migrateMain(state: object): {state, from: number}`. It mutates and returns. Step v2→v3 adds, only where absent:
+  - `freePacks: 0`
+  - `daily: null`
+  - `tipsSeen: []`
+  - `earned: {daily: 0}`
+  - `settings.protect: 12`
+  - `settings.tips: true`
+  - `v: 3`
 
-- [ ] **Step 1: Write the failing tests** `tests/unit/daily.test.mjs`:
+  It never touches `money`, `deposited` or the collection. A v3 state comes back unchanged.
+- `freshState()` (boosters):
+  - `v: 3`
+  - `freePacks: BBJ.ECONOMY.starterPacks`
+  - `starterPending: true`
+  - `daily: null`, `tipsSeen: []`, `earned: {daily: 0}`
+  - `DEFAULTS` gains `protect: 12, tips: true`
+- `load()` (boosters):
+  - the legacy gem branch runs only when `(S.v || 1) < 2` (it is currently `S.v !== 2`, which would wipe v3 wallets);
+  - then, if `S.v < BBJ.MAIN_SAVE_VERSION`: write the raw string to `bendingBoosters.v1.bak-v{S.v}`, call `BBJ.migrateMain(S)`, then `save()`.
+- `tests/m1.test.cjs` skeleton:
+  - `const env = require('./harness/env.cjs')`
+  - one browser
+  - `async function open(time = '2026-11-07T10:00:00Z', hash = '', {tips = false} = {})`: a context with `{viewport: {width: 1440, height: 1000}, timezoneId: 'UTC'}`, HTTPS blocked, `page.clock.setFixedTime(new Date(time))` before `goto(env.GAME URL + hash)`. Unless `tips`, it then runs `S.settings.tips = false; save(); document.querySelectorAll('.bb-tip').forEach(e => e.remove())` so bubbles never cover controls in other groups. Returns `{c, p}`.
+  - a `groups` counter
+  - ends with `ALL M1 CHECKS PASSED (n groups)`
+  - later tasks add groups before that line.
 
-```js
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { claimDaily } from '../../src/economy/daily.js';
-import { daysBetween, localDay } from '../../src/economy/clock.js';
-import { ECONOMY } from '../../src/economy/config.js';
+- [ ] **Step 1: Write the failing tests.**
+  ```js
+  // tests/unit/migrate.test.mjs
+  import test from 'node:test'; import assert from 'node:assert/strict';
+  import { migrateMain } from '../../src/save/migrate.js';
+  test('v2 save gains v3 fields and keeps wallet and collection', () => {
+    const { state, from } = migrateMain({ v: 2, money: 321.45, deposited: 50, coll: { 'TLA:1': 3 }, foil: {}, settings: { price: 6.99, keep: 4 } });
+    assert.equal(from, 2); assert.equal(state.v, 3); assert.equal(state.money, 321.45);
+    assert.deepEqual(state.coll, { 'TLA:1': 3 }); assert.equal(state.freePacks, 0); assert.equal(state.daily, null);
+    assert.deepEqual(state.tipsSeen, []); assert.deepEqual(state.earned, { daily: 0 });
+    assert.equal(state.settings.protect, 12); assert.equal(state.settings.tips, true); assert.equal(state.settings.keep, 4);
+  });
+  test('minimal v2 save without settings migrates', () => {
+    const { state } = migrateMain({ v: 2, money: 12 });
+    assert.equal(state.money, 12); assert.equal(state.settings.protect, 12);
+  });
+  test('v3 save comes back unchanged', () => {
+    const s = { v: 3, money: 1, freePacks: 2, daily: { last: '2026-11-07', streak: 2 }, tipsSeen: ['packs'], earned: { daily: 5 }, settings: { protect: 8, tips: false } };
+    assert.deepEqual(migrateMain(structuredClone(s)).state, s);
+  });
+  ```
+  Then the first m1 group, *"v2 save migrates with backup"*:
+  - open with `#debug`;
+  - `localStorage.setItem('bendingBoosters.v1', JSON.stringify({v:2, money:321.45, deposited:50, coll:{}, foil:{}, settings:{}}))`;
+  - reload;
+  - assert `S.v === 3`;
+  - assert `JSON.parse(localStorage.getItem('bendingBoosters.v1.bak-v2')).money === 321.45`;
+  - assert `S.money === 321.45`.
 
-const fresh = { last: null, streak: 0 };
-test('first ever claim is streak day 1: $5 and 1 pack', () => {
-  assert.deepEqual(claimDaily(fresh, '2026-11-07'),
-    { daily: { last: '2026-11-07', streak: 1 }, claimed: true, cash: 5, packs: 1, streakDay: 1 });
-});
-test('consecutive days follow 5,5,10,10,15,15,20 then stay 20', () => {
-  let d = fresh; const cash = [];
-  for (let i = 0; i < 9; i++) { const r = claimDaily(d, `2026-11-${String(7 + i).padStart(2, '0')}`); cash.push(r.cash); assert.equal(r.packs, 1); d = r.daily; }
-  assert.deepEqual(cash, [5, 5, 10, 10, 15, 15, 20, 20, 20]);
-});
-test('a missed day resets the streak and accrues packs', () => {
-  const r = claimDaily({ last: '2026-11-07', streak: 5 }, '2026-11-09');
-  assert.deepEqual([r.daily.streak, r.cash, r.packs], [1, 5, 2]);
-});
-test('long absence accrues at most 3 packs', () => {
-  assert.equal(claimDaily({ last: '2026-11-01', streak: 3 }, '2026-11-20').packs, 3);
-});
-test('same day pays nothing', () => {
-  const d = { last: '2026-11-07', streak: 2 };
-  assert.deepEqual(claimDaily(d, '2026-11-07'), { daily: d, claimed: false, cash: 0, packs: 0, streakDay: 2 });
-});
-test('clock moved backwards pays nothing and keeps the streak', () => {
-  const d = { last: '2026-11-07', streak: 4 };
-  const r = claimDaily(d, '2026-11-05');
-  assert.equal(r.claimed, false); assert.equal(r.cash, 0); assert.deepEqual(r.daily, d);
-});
-test('daysBetween crosses months and is negative backwards', () => {
-  assert.equal(daysBetween('2026-10-31', '2026-11-01'), 1);
-  assert.equal(daysBetween('2026-11-05', '2026-11-03'), -2);
-});
-test('localDay formats YYYY-MM-DD', () => {
-  assert.match(localDay(Date.UTC(2026, 10, 7, 12)), /^\d{4}-\d{2}-\d{2}$/);
-});
-test('payout table matches the spec', () => {
-  assert.deepEqual(ECONOMY.journeyPayout, { fight: 1, elite: 2.5, boss: [6, 10, 14], win: 10 });
-});
-```
+- [ ] **Step 2: Run them.** Both `node --test "tests/unit/*.test.mjs"` and `node tools/build.mjs && node tests/m1.test.cjs` should FAIL.
 
-- [ ] **Step 2: Run to verify it fails.** Run `node --test tests/unit/daily.test.mjs`. Expected: FAIL, cannot find module `src/economy/daily.js`.
-- [ ] **Step 3: Implement** `config.js`, `clock.js` and `daily.js` with the signatures above.
-  - `claimDaily` rules:
-    - `last === null` → streak 1, packs 1.
-    - Gap `g = daysBetween(last, today)`:
-      - `g <= 0` → unclaimed result.
-      - `g === 1` → streak + 1, otherwise streak 1.
-      - packs = `min(g, dailyPackMaxAccrual)`.
-    - cash = `streakCash[min(streak, length) − 1]`.
-  - In `src/engine/run.js`, replace the `PAYOUT` literal with `var PAYOUT = ECONOMY.journeyPayout;`, importing `ECONOMY` from `"../economy/config.js"`.
-  - Add the modules to `build.config.json` as in the File map.
-- [ ] **Step 4: Verify.** Run `npm run test:quick`. Expected: all pass, including `# pass 10` for the unit tests. Then run `npm run check`. Expected: `modules ok`.
-- [ ] **Step 5:** Commit: `feat(economy): config table, clock and daily claim rules`.
+- [ ] **Step 3: Implement** `migrate.js` and the `03-state.js` changes described above.
 
----
+- [ ] **Step 4: Verify.** `npm test` → all suites PASS.
 
-### Task 3: Main-save v3 migration and boot after BBJ
+- [ ] **Step 5: Commit.** `git add -A && git commit -m "feat(save): versioned main-save migration to v3 with backup"`
+
+### Task 4: Starter and daily gifts in the game
 
 **Files:**
-- Create: `src/save/migrate.js`, `src/boot.js`, `tests/unit/migrate.test.mjs`
+- Create: `src/boosters/20-gifts.js`, `src/styles/main/18-friends-beta.css`
 - Modify:
-  - `src/boosters/03-state.js` (`freshState`, `load`)
-  - `src/boosters/19-wire-up.js`: delete lines 7–8 (the `load(); initNameKeys(); …` line and the `const h0=…` line). Keep the `resize` listener on line 6.
-  - `src/index.html`: rename the `journey-recovery` slot to `boot`
-  - `build.config.json`: slot `boot: ["src/boot.js", "src/journey-recovery.js"]`; also add the new modules
+  - `src/boot.js`
+  - `src/boosters/09-opening.js` (`tryOpen`)
+  - `src/boosters/15-header.js` (`refreshHeader`)
+  - `src/boosters/18-settings.js` (`resetProgress`)
+  - `src/boosters/19-wire-up.js` (pack click)
+  - `src/index.html` (`#giftBanner` at the top of `#v-open`; `#freeBtn` in `.heroSide`)
+  - `build.config.json`
+  - `tests/browser.test.cjs`, `tests/visual.test.cjs`, `tests/progression.test.cjs`, `tests/m1.test.cjs`
+
+**Interfaces:**
+- Consumes `BBJ.localDayKey`, `BBJ.dailyGrant`, `BBJ.ECONOMY` (Task 2) and the v3 fields (Task 3).
+- `applyDailyGift(): {packs, cash, streak, starter: boolean} | null`
+  - builds `next = {...S, freePacks, money, earned, daily, starterPending: false}`;
+  - if `save(next)` succeeds, `Object.assign(S, next)`;
+  - otherwise it toasts "Couldn't save today's gift. It will be offered again." and returns `null`;
+  - returns `null` when nothing is due.
+  - `boot.js` calls it right after `load()`, then `renderGiftBanner(result)`.
+- `renderGiftBanner(g)`: inline, dismissible (`#giftBannerClose`). Lines:
+  - "Starter gift: 3 free packs." when `g.starter`;
+  - "Day {streak} streak: +${cash} and {packs} free pack(s)." when there's cash or packs.
+- `tryOpen(n, free = false)`: when `free`, `n` must be 1 and `S.freePacks ≥ 1`. It decrements `freePacks` and leaves `money`/`packSpend` unchanged.
+- The big `#pack` opens a free pack when `S.freePacks > 0`, otherwise a paid one.
+- `#freeBtn` reads "Open free pack · {n} left" and is visible only while `freePacks > 0`.
+- The reveal footer shows `#againFree` while `freePacks > 0`.
+- `resetProgress()` keeps the current `S.daily` in the fresh state.
+
+- [ ] **Step 1: Write the failing m1 groups.**
+  ```js
+  { // starter and daily gifts
+    const { c, p } = await open('2026-11-07T10:00:00Z');
+    const W = () => p.evaluate(() => ({ money: S.money, free: S.freePacks, streak: S.daily.streak, packs: S.packs, spend: S.packSpend }));
+    assert.deepEqual(await W(), { money: 55, free: 4, streak: 1, packs: 0, spend: 0 });
+    const banner = await p.locator('#giftBanner').innerText();
+    assert.match(banner, /3 free packs/); assert.match(banner, /\+\$5/);
+    await p.locator('#pack').click(); await p.evaluate(() => stageClose());
+    assert.deepEqual(await W(), { money: 55, free: 3, streak: 1, packs: 1, spend: 0 });
+    await p.reload(); assert.equal((await W()).money, 55);                       // same day: nothing new
+    await p.clock.setFixedTime(new Date('2026-11-08T09:00:00Z')); await p.reload();
+    assert.deepEqual(await W(), { money: 60, free: 4, streak: 2, packs: 1, spend: 0 });
+    await p.clock.setFixedTime(new Date('2026-11-12T09:00:00Z')); await p.reload();
+    assert.deepEqual(await W(), { money: 65, free: 7, streak: 1, packs: 1, spend: 0 }); // gap 4 → 3 banked packs
+    await c.close(); console.log('PASS starter gift, daily streak, banked packs, free pack opening'); groups++;
+  }
+  { // a failed gift save is not lost or doubled
+    const { c, p } = await open('2026-11-07T10:00:00Z');
+    await p.addInitScript(() => { const o = Storage.prototype.setItem; window.__fail = true;
+      Storage.prototype.setItem = function (k, v) { if (k === 'bendingBoosters.v1' && window.__fail) throw new Error('quota'); return o.call(this, k, v); }; });
+    await p.clock.setFixedTime(new Date('2026-11-08T10:00:00Z')); await p.reload();
+    assert.deepEqual(await p.evaluate(() => ({ money: S.money, last: S.daily.last })), { money: 55, last: '2026-11-07' });
+    assert.deepEqual(await p.evaluate(() => { window.__fail = false; const a = applyDailyGift(), b = applyDailyGift(); return { a: !!a, b, money: S.money }; }), { a: true, b: null, money: 60 });
+    await c.close(); console.log('PASS gift survives a storage failure without doubling'); groups++;
+  }
+  ```
+  Also update the Task 3 group's expected `S.money` to `326.45` (a migrated save gets its day-1 gift).
+
+- [ ] **Step 2: Run.** `node tools/build.mjs && node tests/m1.test.cjs` should FAIL.
+
+- [ ] **Step 3: Implement** the interfaces above. Styles go in `18-friends-beta.css`, which is added to the `styles` slot.
+
+- [ ] **Step 4: Update the existing suites** for the intended change:
+  - In the `fresh()` helpers of `tests/browser.test.cjs`, `tests/visual.test.cjs`, `tools/capture.cjs` and the browser part of `tests/progression.test.cjs`, add `S.money=50;S.freePacks=0;` before `save()`. This restores the legacy wallet baseline their assertions use.
+  - In `visual.test.cjs`, change the migration assertion from `321.45` to `326.45`.
+
+- [ ] **Step 5: Verify.** `npm test` → all suites PASS.
+
+- [ ] **Step 6: Commit.** `git add -A && git commit -m "feat: starter gift, daily pack and streak cash, free packs"`
+
+### Task 5: Add funds debug-only, broke modal, earned vs spent
+
+**Files:**
+- Modify:
+  - `src/boosters/15-header.js` (`refreshHeader` sets `$('shopBtn').hidden = !BB_DEBUG`)
+  - `src/boosters/09-opening.js` (when funds are short: `BB_DEBUG ? openShop(msg) : showBroke(c)`)
+  - `src/boosters/20-gifts.js` (add `showBroke(cost)`)
+  - `src/index.html` (wrap the price, box, buylist and start fields in `<div id="econSettings">`)
+  - `src/boosters/18-settings.js` (hide `#econSettings` unless `BB_DEBUG`; when not debug, save keeps the stored values for those four)
+  - `src/boosters/14-stats.js`
+  - `tests/m1.test.cjs`
+
+**Interfaces:**
+- `showBroke(cost: number): void` opens the modal with:
+  - title "Not enough money";
+  - "You need {cost} but have {money}.";
+  - three ways to earn: a Journey run (always free, pays when it ends), selling extras, tomorrow's daily gift;
+  - buttons `#brokeJourney` → `showView('journey')` and `#brokeCollection` → `showView('collection')`;
+  - no deposit buttons.
+- Stats:
+  - replace the "Net profit/loss" tile with **"Earned vs spent"**, value `earned − S.packSpend` (green when ≥ 0), subtitle `earned $X · spent $Y`;
+  - `earned = (S.runIncome || 0) + S.soldIncome + (S.earned?.daily || 0)`;
+  - add a **"Daily gifts"** tile showing `S.earned.daily`;
+  - leave `S.deposited` in the save untouched.
+
+- [ ] **Step 1: Write the failing m1 group.**
+  ```js
+  {
+    const { c, p } = await open();
+    assert.equal(await p.locator('#shopBtn').isVisible(), false);
+    await p.evaluate(() => { S.money = 1; save(); }); await p.locator('#open10').click();
+    assert.match(await p.locator('#mbody').innerText(), /Not enough money/);
+    assert.equal(await p.locator('#mbody [data-o]').count(), 0);
+    await p.evaluate(() => { document.getElementById('modal').classList.remove('on'); showView('settings'); });
+    assert.equal(await p.locator('#econSettings').isVisible(), false);
+    await p.evaluate(() => { S.runIncome = 3; S.soldIncome = 2; S.earned.daily = 5; S.packSpend = 6.99; showView('stats'); });
+    assert.match(await p.locator('#moneyTiles').innerText(), /Earned vs spent\s*\$3\.01/);
+    const dbg = await open('2026-11-07T10:00:00Z', '#debug');
+    assert.equal(await dbg.p.locator('#shopBtn').isVisible(), true);
+    await dbg.c.close(); await c.close(); console.log('PASS add funds debug-only, broke modal, earned vs spent'); groups++;
+  }
+  ```
+
+- [ ] **Step 2: Run.** `node tools/build.mjs && node tests/m1.test.cjs` should FAIL.
+
+- [ ] **Step 3: Implement** as described in Interfaces.
+
+- [ ] **Step 4: Verify.** `npm test` → PASS. If a suite reads the old "Net profit/loss" tile, point it at "Earned vs spent".
+
+- [ ] **Step 5: Commit.** `git commit -am "feat: earned economy UI (add funds debug-only, broke modal, earned vs spent)"`
+
+### Task 6: Star-protected selling
+
+**Files:**
+- Create: `src/economy/sell.js`, `tests/unit/sell.test.mjs`
+- Modify:
+  - `src/boosters/11-shop.js` (`dupesIn`)
+  - `src/boosters/12-collection.js` (label and confirm)
+  - `src/boosters/13-odds-model.js` (the "Sell extras keeps …" sentence states both limits)
+  - `src/boosters/18-settings.js` and `src/index.html` (`#sProtect`, number 0–12, label "Keep for Journey cards (★5 needs 12)")
+  - `build.config.json`, `src/ui/index.js` (also re-export `isRunCard`, `starsFromCopies`)
+  - `tests/m1.test.cjs`
+
+**Interfaces:**
+- `sellExtrasPlan(entries, {keep, protect}): {sell: Array<{key, foil, n}>, starLosses: Array<{name, from, to}>}`
+  - `entries` is `Array<{key, name, runCard, reg, foil}>`.
+  - **Non-Journey cards:** keep `keep` copies per printing; sell regular copies before foils.
+  - **Journey cards:** group by `name`, with total `T`. Sell up to `max(0, T − protect)` copies, taking from the printing with the most regular copies first, regular before foil.
+  - `starLosses` lists names where `starsFromCopies(T − sold) < starsFromCopies(T)`.
+  - `sell` keeps input order and has no zero entries.
+  - `keep` and `protect` are clamped to integers ≥ 0.
+- `dupesIn(list)` keeps its return shape `[{c, k, foil, n}]` and builds `entries` through `BBJ.sellExtrasPlan`. For Journey cards it includes every printing of the name (`NAME_KEYS`).
+- "Sell all extras":
+  - label `Sell all extras (keep {keep} · Journey cards {protect}) · $X`;
+  - if `starLosses` is non-empty, the second click opens a modal listing `Name ★from → ★to` with `#sellConfirm` and Cancel instead of selling.
+- `#sProtect` is clamped to 0–12 on save.
+
+- [ ] **Step 1: Write the failing tests.**
+  ```js
+  // tests/unit/sell.test.mjs
+  import test from 'node:test'; import assert from 'node:assert/strict';
+  import { sellExtrasPlan } from '../../src/economy/sell.js';
+  const e = (key, name, runCard, reg, foil = 0) => ({ key, name, runCard, reg, foil });
+  test('Journey cards keep 12 across printings; others keep 4', () => {
+    const plan = sellExtrasPlan([e('TLA:1', 'Aang', true, 10), e('TLE:9', 'Aang', true, 5), e('TLA:2', 'Island', false, 9)], { keep: 4, protect: 12 });
+    assert.deepEqual(plan.sell, [{ key: 'TLA:1', foil: false, n: 3 }, { key: 'TLA:2', foil: false, n: 5 }]);
+    assert.deepEqual(plan.starLosses, []);
+  });
+  test('regular copies sell before foils', () =>
+    assert.deepEqual(sellExtrasPlan([e('TLA:3', 'Momo', false, 5, 2)], { keep: 4, protect: 12 }).sell, [{ key: 'TLA:3', foil: false, n: 3 }]));
+  test('lowering protection reports star losses', () => {
+    const plan = sellExtrasPlan([e('TLA:1', 'Aang', true, 12)], { keep: 4, protect: 4 });
+    assert.deepEqual(plan.sell, [{ key: 'TLA:1', foil: false, n: 8 }]);
+    assert.deepEqual(plan.starLosses, [{ name: 'Aang', from: 5, to: 3 }]);
+  });
+  test('nothing to sell at the limits', () =>
+    assert.deepEqual(sellExtrasPlan([e('TLA:1', 'Aang', true, 12), e('TLA:2', 'Island', false, 4)], { keep: 4, protect: 12 }).sell, []));
+  ```
+  Then the m1 group, *"selling protects stars"*:
+  - pick `run = BASE.find(c => BBJ.isRunCard(c) && c.r === 'C')` and `other = BASE.find(c => !BBJ.isRunCard(c))`;
+  - set `S.coll[cardKey(run)] = 15` and `S.coll[cardKey(other)] = 6` (clearing other printings of `run`'s name);
+  - `showView('collection')` and click `#sellAll` twice;
+  - assert the counts are now 12 and 4;
+  - then set `S.settings.protect = 4`, set the run card back to 12, click `#sellAll` twice;
+  - assert `#mbody` contains `★5 → ★3`;
+  - click Cancel and assert the count is still 12.
+
+- [ ] **Step 2: Run.** The unit tests and m1 should FAIL.
+
+- [ ] **Step 3: Implement** as described in Interfaces.
+
+- [ ] **Step 4: Verify.** `npm test` → PASS.
+
+- [ ] **Step 5: Commit.** `git add -A && git commit -m "feat: selling extras never drops Journey star levels"`
+
+### Task 7: First-time tips
+
+**Files:**
+- Create: `src/ui/tips.js`
+- Modify:
+  - `src/styles/main/18-friends-beta.css` (`.bb-tip`: fixed bottom-right, max-width 320px, above content and below `.modal`)
+  - `src/boot.js` (`configureTips`, then the tip for the initial view)
+  - `src/boosters/15-header.js` (`showView` calls `window.BBJ && BBJ.showTip(...)`: `open → packs`, `collection → collection`)
+  - `src/boosters/09-opening.js` (`stageOpen` → `reveal`)
+  - `src/ui/journey.js`: `renderStart` → `journeyStart`, `renderMap` → `map`, `renderFight` → `fight`, the first `onPlayCard` of a run → `flow`, `renderNode` with `p.kind` shop/rest/event → `shop`/`rest`/`event`
+  - `src/index.html` and `src/boosters/18-settings.js` (`#sTips` checkbox "Show tips", `#resetTips` button)
+  - `build.config.json`, `src/ui/index.js`, `tests/m1.test.cjs`
+
+**Interfaces:**
+- `TIPS: Record<id, {title, text}>` with ids `packs`, `reveal`, `collection`, `journeyStart`, `map`, `fight`, `flow`, `shop`, `rest`, `event`. Copy is at most 2 short sentences each, explaining what the screen is for and the one action to try.
+- `configureTips({enabled: () => boolean, seen: () => string[], markSeen: (id) => void}): void`
+- `showTip(id): boolean`:
+  - no-op (`false`) when disabled, already seen, unknown, or another tip is visible;
+  - otherwise appends `<div class="bb-tip" data-tip="{id}" role="note"><b>…</b><p>…</p><button class="btn" data-tip-ok>Got it</button></div>`;
+  - "Got it" calls `markSeen(id)` and removes the bubble.
+- `resetTips(): void` removes any visible bubble.
+- Boot configuration:
+  - `enabled: () => S.settings.tips && !(BB_DEBUG && !/tips/.test(location.hash))`
+  - `seen: () => S.tipsSeen`
+  - `markSeen` pushes the id and calls `save()`.
+- `#resetTips` sets `S.tipsSeen = []`, calls `save()` and `BBJ.resetTips()`.
+
+- [ ] **Step 1: Write the failing m1 group.**
+  ```js
+  {
+    const { c, p } = await open(undefined, '', { tips: true });
+    const tip = id => p.locator(`.bb-tip[data-tip="${id}"]`);
+    assert.equal(await tip('packs').isVisible(), true);
+    await tip('packs').locator('[data-tip-ok]').click();
+    assert.equal(await p.evaluate(() => S.tipsSeen.includes('packs')), true);
+    await p.reload(); assert.equal(await tip('packs').count(), 0);
+    await p.evaluate(() => showView('collection')); assert.equal(await tip('collection').isVisible(), true);
+    await p.evaluate(() => { showView('settings'); document.getElementById('resetTips').click(); }); await p.reload();
+    assert.equal(await tip('packs').isVisible(), true);
+    const dbg = await open('2026-11-07T10:00:00Z', '#debug', { tips: true }); assert.equal(await dbg.p.locator('.bb-tip').count(), 0);
+    await dbg.c.close(); await c.close(); console.log('PASS first-time tips: show once, dismiss, reset, off in debug'); groups++;
+  }
+  ```
+
+- [ ] **Step 2: Run.** It should FAIL.
+
+- [ ] **Step 3: Implement** as described in Interfaces, and write the ten tips' copy.
+
+- [ ] **Step 4: Verify.** `npm test` → PASS. Then run `npm run screens` and check that no tip covers the End turn button at 1440×1000 or 1280×720.
+
+- [ ] **Step 5: Commit.** `git add -A && git commit -m "feat: first-time tips"`
+
+### Task 8: Resume card on home, abandon pays out
+
+**Files:**
+- Modify:
+  - `src/engine/run.js`
+  - `src/ui/journey.js` (the abandon flow and `api.resume()`)
+  - `src/boosters/20-gifts.js` (`renderHomeResume`)
+  - `src/index.html` (`#homeResume` in `#v-open`)
+  - `src/boot.js` (call after the gift)
+  - `src/boosters/15-header.js` (`showView('open')` re-renders it)
   - `src/ui/index.js`
-  - `README.md` ("Where this source came from": now past tense, pointing to tag `recovered-baseline`)
+- Create: `tests/unit/run-summary.test.mjs`
 
 **Interfaces:**
-- Consumes: `ECONOMY` (Task 2).
-- Produces:
-  - `MAIN_SAVE_VERSION = 3`
-  - `freshMainFields() -> { freePacks: 0, freeOpened: 0, daily: { last: null, streak: 0 }, dailyIncome: 0, tips: {}, starterGiven: false }`
-  - `migrateMain(state) -> state`. It mutates and returns the state. For v2: adds `freshMainFields()` with `starterGiven: true`, sets `settings.keepJourney = settings.keepJourney ?? ECONOMY.keepJourneyDefault`, and sets `v = 3`. A v3 state is returned unchanged.
-  - `src/boot.js` runs these lines, moved verbatim from `19-wire-up.js`: `Object.assign(DEFAULTS, { start: ECONOMY.startingBankroll, price: ECONOMY.packPrice, boxPrice: ECONOMY.boxPrice, buy: ECONOMY.sellRatePercent, keep: ECONOMY.keepDefault, keepJourney: ECONOMY.keepJourneyDefault })` using `BBJ.ECONOMY`, then `load(); initNameKeys(); refreshHeader(); imgStatus(); loadImgIndex();` and the `h0` line. Later tasks append calls here.
-  - `freshState()` returns `v: 3` plus `...BBJ.freshMainFields()`.
-  - `load()` keeps its legacy pre-v2 branch, then calls `BBJ.migrateMain(S)`.
+- `abandonRun(run): void` sets `status = 'lost'` and `abandoned = true`, and clears `fight` and `pending`. `payout(run)` itself is unchanged.
+- `runSummaryFromSave(raw: string | null, epoch: string | null): {book, floor, hp, maxHp, gold, deck: number} | null`. Returns `null` when:
+  - the save is missing or won't parse;
+  - `(v || 1) < SAVE_VERSION`;
+  - the epoch doesn't match;
+  - the status isn't `map`, `node` or `fight`.
+- Journey `api.resume(): boolean` does exactly what the `#jxResume` click does; it returns `false` when there's no resumable run.
+- Abandon:
+  - confirm text: `Abandon this run? You'll be paid for what you've won so far: $X.`
+  - on OK: `st.run = saved; abandonRun(st.run); renderSummary()` (the existing settlement is idempotent).
+- `renderHomeResume()`:
+  - when the summary is non-null, shows "Run in progress · Book {n}, floor {f} · {hp}/{maxHp} HP · {deck} cards" and `#homeResumeBtn`;
+  - the button runs `showView('journey'); JOURNEY.resume()`;
+  - otherwise the card is hidden.
 
-- [ ] **Step 1: Write the failing tests** `tests/unit/migrate.test.mjs`:
+- [ ] **Step 1: Write the failing tests.**
+  ```js
+  // tests/unit/run-summary.test.mjs
+  import test from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
+  import { setCatalog } from '../../src/engine/catalog.js';
+  import { createRun, abandonRun, payout, runSummaryFromSave } from '../../src/engine/run.js';
+  setCatalog(JSON.parse(fs.readFileSync('src/catalog/data.json', 'utf8')).base);
+  const save = o => JSON.stringify({ v: 2, status: 'map', book: 2, floor: 7, hp: 31, maxHp: 60, gold: 40, deck: new Array(14).fill({}), epoch: null, ...o });
+  test('summary of an in-progress save', () =>
+    assert.deepEqual(runSummaryFromSave(save({}), null), { book: 2, floor: 7, hp: 31, maxHp: 60, gold: 40, deck: 14 }));
+  test('no summary for missing, broken, finished, old or stale saves', () => {
+    for (const raw of [null, '{', save({ status: 'lost' }), save({ v: 1 })]) assert.equal(runSummaryFromSave(raw, null), null);
+    assert.equal(runSummaryFromSave(save({ epoch: 'a' }), 'b'), null);
+  });
+  test('abandoning pays like a defeat', () => {
+    const run = createRun({ seed: 'ABANDON', nation: 'water', startCharmId: 'big_hitter' });
+    run.stats.fights = 3; run.stats.elites = 1; abandonRun(run);
+    assert.equal(run.status, 'lost'); assert.equal(payout(run), 5.5);
+  });
+  ```
+  Then the m1 group, *"resume from home and abandon payout"* (`#debug`):
+  - `showView('journey'); BBJ._newRun('HOME-RESUME','water'); BBJ._debugGoto('fight')`;
+  - set `stats.fights = 2` in the stored `bb.run` JSON;
+  - reload. `showView` rewrote the hash to `#journey`, so debug is off now; run `showView('open')`;
+  - assert `#homeResume` text matches `/Book 1, floor \d+ · \d+\/\d+ HP · \d+ cards/`;
+  - click `#homeResumeBtn` and assert `BBJ._state.run.seed === 'HOME-RESUME'`;
+  - reload, `showView('journey')`, accept the dialog, click `#jxAbandon`;
+  - assert `S.money` rose by 2, `S.journey.runs === 1` and `localStorage.getItem('bb.run') === null`.
 
-```js
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { migrateMain, freshMainFields, MAIN_SAVE_VERSION } from '../../src/save/migrate.js';
-const v2 = () => ({ v: 2, money: 12.5, coll: { 'TLA:1': 3 }, settings: { keep: 4 } });
-test('v2 save becomes v3 without a starter gift', () => {
-  const s = migrateMain(v2());
-  assert.equal(s.v, MAIN_SAVE_VERSION);
-  assert.equal(s.starterGiven, true);
-  assert.deepEqual(s.daily, { last: null, streak: 0 });
-  assert.equal(s.freePacks, 0); assert.equal(s.settings.keepJourney, 12);
-  assert.equal(s.money, 12.5); assert.deepEqual(s.coll, { 'TLA:1': 3 });
-});
-test('existing keepJourney is preserved', () => {
-  const s = v2(); s.settings.keepJourney = 7;
-  assert.equal(migrateMain(s).settings.keepJourney, 7);
-});
-test('v3 save is unchanged', () => {
-  const s = { v: 3, ...freshMainFields(), money: 1, settings: { keepJourney: 12 } };
-  assert.deepEqual(migrateMain(structuredClone(s)), s);
-});
-test('fresh fields mean a first launch', () => {
-  assert.equal(freshMainFields().starterGiven, false);
-});
-```
+- [ ] **Step 2: Run.** It should FAIL.
 
-- [ ] **Step 2: Run to verify it fails.** Run `node --test tests/unit/migrate.test.mjs`. Expected: FAIL, module not found.
-- [ ] **Step 3: Implement** `migrate.js`, `boot.js` and the edits listed above. Exports go through `src/ui/index.js`.
-- [ ] **Step 4: Verify.** Run `npm test`. Expected: everything passes, including all 12 browser groups and 10 visual groups. The visual group "pre-visual wallet and active Journey save resume" covers v2 → v3 with an active run. Then run `node tools/build.mjs --check history/3-visual-edition.html`. Expected: **differs** (by design from here on).
-- [ ] **Step 5:** Commit: `feat(save): main save v3 migration; boot after BBJ`.
+- [ ] **Step 3: Implement** as described in Interfaces.
 
----
+- [ ] **Step 4: Verify.** `npm test` → PASS.
 
-### Task 4: Starter gift, daily gift, free packs, earned-money UI
+- [ ] **Step 5: Commit.** `git add -A && git commit -m "feat: resume card on home; abandoning a run pays what was won"`
+
+### Task 9: Save export and import
 
 **Files:**
-- Create: `src/boosters/20-gifts.js`, `src/styles/friends-beta.css`, `tests/friends-beta.test.cjs`
+- Create: `src/save/crc32.js`, `src/save/transfer.js`, `tests/unit/transfer.test.mjs`
 - Modify:
-  - `src/boosters/09-opening.js:39-51`
-  - `src/boosters/11-shop.js:3-9,25`
-  - `src/boosters/14-stats.js:14-23`
+  - `src/index.html` (a Settings "Save file" block: `#exportSave`, `#importSave`, hidden `#importFile` `accept=".json"`, `#saveFileMsg`)
   - `src/boosters/18-settings.js`
-  - `src/index.html`: home `#giftPanel`, button `#openFree` with `#freeCount`, Settings economy inputs wrapped in `#econSettings`
-  - `src/boot.js`
-  - `build.config.json`: `20-gifts.js` after `19-wire-up.js`; `friends-beta.css` after `visual-edition.css` in the `visual-edition` slot
-  - `package.json`: `test` script gets `&& node tests/friends-beta.test.cjs`
+  - `build.config.json`, `src/ui/index.js`, `tests/m1.test.cjs`
 
 **Interfaces:**
-- Consumes: `BBJ.claimDaily`, `BBJ.localDay`, `BBJ.ECONOMY` (Task 2); v3 fields (Task 3).
-- Produces:
-  - `applyGifts(now = Date.now()) -> { starter: number, cash: number, packs: number, streakDay: number } | null`
-    - Builds the next state from a copy of `S`:
-      - starter packs if `!starterGiven`;
-      - the `claimDaily(S.daily, BBJ.localDay(now))` result;
-      - `money += cash`, `dailyIncome += cash`, `freePacks += starter + packs`.
-    - Commits with `save(next)` and only then copies it into `S`, the same pattern as `settleJourney`. A failed save changes nothing and returns `null`.
-    - Called from `src/boot.js` right after `load()`.
-  - `renderGiftPanel(result)`: shows a non-blocking banner in `#giftPanel`, e.g. "Daily gift: +$5 and 1 free pack · streak day 1" (plus "Welcome gift: 3 free packs" on first launch). It also shows or hides `#openFree`.
-  - `tryOpen(n, free = false)`:
-    - Free opens require `S.freePacks >= n`, decrement it, increment `S.freeOpened`, and don't debit money.
-    - When money is short and not in debug mode, show a "Not enough money" modal with buttons `#goJourney`, `#goCollection`, and `#goFree` when free packs exist. In debug mode it shows `openShop` as before.
-  - `openShop` / `#shopBtn` are visible only when `BB_DEBUG`. `#econSettings` (price, box, sell %, starting money) is visible only when `BB_DEBUG`.
-  - Stats: replace "Net profit/loss" with:
-    - `tile('Earned', …)` = `runIncome + soldIncome + dailyIncome`
-    - `tile('Earned vs spent', …)` = earned − `packSpend`, green when ≥ 0
-  - Test helper in `tests/friends-beta.test.cjs`:
-    `fresh({ debug = true, time = '2026-11-07T10:00:00', timezoneId = 'Asia/Krasnoyarsk', storageFails = false } = {}) -> { page, ctx }`
-    - Builds a new context with that timezone, `page.clock.install({ time })` **before** `goto`, outside HTTPS aborted, and `pageerror` collected.
-    - `storageFails` adds an init script that makes `localStorage.setItem` throw.
+- `crc32(text: string): number`: IEEE polynomial `0xEDB88320` over UTF-8 bytes, unsigned.
+- `collectSave(storage, now = new Date()): {app: 'bending-boosters', v: 1, exportedAt, keys, crc}`
+  - `storage` is localStorage-shaped: `length`, `key(i)`, `getItem`, `setItem`, `removeItem`;
+  - `keys` holds every key starting with `bendingBoosters.` or `bb.`, except `bb.backup`, `bb.imgidx` and `bb.prices`;
+  - `crc = crc32(JSON.stringify(keys with sorted entries))`.
+- `checkSaveFile(file): {ok: true} | {ok: false, error}`, with errors exactly:
+  - "Not a Bending Boosters save file"
+  - "Unsupported save file version"
+  - "Save file is damaged (checksum mismatch)"
+  - "Save file has no main save"
+- `applySaveFile(storage, file): void`:
+  1. write `bb.backup = JSON.stringify(collectSave(storage))`;
+  2. remove the current exportable keys;
+  3. set the file's keys;
+  4. if any write throws, restore the snapshot and rethrow.
+- Glue:
+  - **Export:** `save()`, then download `bending-boosters-save-{localDayKey()}.json`.
+  - **Import:** pick a file, `JSON.parse` (a failure shows the first error), then `checkSaveFile`. On an error, show it in `#saveFileMsg`. Otherwise confirm "Replace your current save with this file? Your current save is kept as a backup.", then `applySaveFile` and `location.reload()`. If applying throws, show "Import failed: your previous save is unchanged."
 
-- [ ] **Step 1: Write the failing browser tests** in `tests/friends-beta.test.cjs`, one `group(name, fn)` per bullet, printing `PASS <name>`:
-  - `first launch`: `S.money === 55`, `S.freePacks === 4`, `S.starterGiven === true`, `S.daily.streak === 1`, `#giftPanel` contains `streak day 1`.
-  - `free pack`: click `#openFree` → `S.freePacks === 3`, `S.money === 55`, `S.packs === 1`.
-  - `next day`: `page.clock.setSystemTime('2026-11-08T09:00:00')` then reload → `S.money === 60`, `S.daily.streak === 2`, `S.freePacks === 5`.
-  - `same-day reload`: reload again → money still 60.
-  - `missed day`: set `2026-11-10T09:00:00`, reload → streak 1, money 65, `freePacks` up by 2.
-  - `storage failure`: `fresh({ storageFails: true })` → after boot `S.money === 50` and `S.freePacks === 0`. Then a new context without the failure loads the same origin → credited exactly once (`S.money === 55`).
-  - `add funds hidden`: `fresh({ debug: false })` → `#shopBtn` and `#econSettings` are not visible. With `debug: true`, `#shopBtn` is visible.
-  - `broke`: `fresh({ debug: false })`, set `S.money = 0; S.freePacks = 0`, click `#open1` → modal shows `#goJourney`; clicking it shows `#v-journey`.
-  - `existing player`:
-    1. Load `history/3-visual-edition.html` in a fresh context.
-    2. Set `S.money = 20` and start a run via `BBJ._newRun('LEGACY', 'water')`.
-    3. In the **same context**, load `dist/bending-boosters.html`.
-    4. Expect `S.v === 3`, `S.starterGiven === true`, `S.freePacks === 1` (daily only), `S.money === 25`, and `localStorage['bb.run']` still present.
-- [ ] **Step 2: Run to verify it fails.** Run `node tools/build.mjs && node tests/friends-beta.test.cjs`. Expected: FAIL at `first launch` (`S.money` is 50).
-- [ ] **Step 3: Implement** `20-gifts.js` and the edits listed above. In `src/boot.js` call `renderGiftPanel(applyGifts())` after `load()`. Write the CSS for `#giftPanel` and `#openFree` in `friends-beta.css`.
-- [ ] **Step 4: Verify.** Run `npm test`. Expected: all suites pass, and the new file prints `PASS` for all 9 groups. If an existing test asserted `S.money === 50` after a fresh load, change it to the new value and record why in the commit message.
-- [ ] **Step 5:** Commit: `feat(economy): starter gift, daily pack and streak cash, free packs; add funds debug-only`.
+- [ ] **Step 1: Write the failing tests.**
+  ```js
+  // tests/unit/transfer.test.mjs
+  import test from 'node:test'; import assert from 'node:assert/strict';
+  import { crc32 } from '../../src/save/crc32.js';
+  import { collectSave, checkSaveFile, applySaveFile } from '../../src/save/transfer.js';
+  class Mem { constructor(o = {}) { this.m = new Map(Object.entries(o)); } get length() { return this.m.size; }
+    key(i) { return [...this.m.keys()][i] ?? null; } getItem(k) { return this.m.has(k) ? this.m.get(k) : null; }
+    setItem(k, v) { this.m.set(k, String(v)); } removeItem(k) { this.m.delete(k); } }
+  test('crc32 known vector', () => assert.equal(crc32('123456789'), 0xCBF43926));
+  test('export picks game keys and skips caches', () => {
+    const f = collectSave(new Mem({ 'bendingBoosters.v1': '{"v":3}', 'bb.run': '{}', 'bb.imgidx': 'x', 'bb.prices': 'y', 'bb.backup': 'z', other: 'q' }));
+    assert.deepEqual(Object.keys(f.keys).sort(), ['bb.run', 'bendingBoosters.v1']);
+    assert.deepEqual(checkSaveFile(f), { ok: true });
+  });
+  test('import round-trips and keeps a backup', () => {
+    const f = collectSave(new Mem({ 'bendingBoosters.v1': '{"money":10}' }));
+    const s = new Mem({ 'bendingBoosters.v1': '{"money":99}', 'bb.run': '{"old":1}' });
+    applySaveFile(s, f);
+    assert.equal(s.getItem('bendingBoosters.v1'), '{"money":10}'); assert.equal(s.getItem('bb.run'), null);
+    assert.equal(JSON.parse(JSON.parse(s.getItem('bb.backup')).keys['bendingBoosters.v1']).money, 99);
+  });
+  test('rejects foreign, newer, damaged and incomplete files', () => {
+    const f = collectSave(new Mem({ 'bendingBoosters.v1': '{}' }));
+    assert.equal(checkSaveFile(null).error, 'Not a Bending Boosters save file');
+    assert.equal(checkSaveFile({ ...f, v: 2 }).error, 'Unsupported save file version');
+    assert.equal(checkSaveFile({ ...f, keys: { ...f.keys, 'bb.run': 'x' } }).error, 'Save file is damaged (checksum mismatch)');
+    assert.equal(checkSaveFile(collectSave(new Mem({ 'bb.run': '{}' }))).error, 'Save file has no main save');
+  });
+  test('a failed write restores the previous save', () => {
+    class Flaky extends Mem { setItem(k, v) { if (k === 'bb.run') throw new Error('quota'); super.setItem(k, v); } }
+    const f = collectSave(new Mem({ 'bendingBoosters.v1': '{"money":1}', 'bb.run': '{}' }));
+    const s = new Flaky({ 'bendingBoosters.v1': '{"money":2}' });
+    assert.throws(() => applySaveFile(s, f)); assert.equal(s.getItem('bendingBoosters.v1'), '{"money":2}');
+  });
+  ```
+  Then the m1 group, *"export and import round-trip"*:
+  - `showView('settings')`;
+  - `const [d] = await Promise.all([p.waitForEvent('download'), p.click('#exportSave')])`;
+  - read `await d.path()` as JSON and note `money`;
+  - `S.money = 1; save()`;
+  - accept dialogs; `setInputFiles('#importFile', path)`; wait for load;
+  - assert `S.money` equals the exported value;
+  - write a tampered copy (change one key's value) and import it;
+  - assert `#saveFileMsg` matches `/damaged/` and `S.money` is unchanged.
 
----
+- [ ] **Step 2: Run.** It should FAIL.
 
-### Task 5: Star-protected "Sell all extras"
+- [ ] **Step 3: Implement** as described in Interfaces.
 
-**Files:**
-- Create: `src/economy/selling.js`, `tests/unit/selling.test.mjs`
-- Modify:
-  - `src/boosters/11-shop.js:11-18` (`dupesIn`)
-  - `src/boosters/12-collection.js:40-58` (sell-all)
-  - `src/boosters/18-settings.js` (`#sKeepJourney`)
-  - `src/boosters/03-state.js` (`DEFAULTS.keepJourney`)
-  - `src/index.html` (Settings input `#sKeepJourney` next to `#sKeep`)
-  - `tests/friends-beta.test.cjs`
+- [ ] **Step 4: Verify.** `npm test` → PASS.
 
-**Interfaces:**
-- Consumes: `starsFromCopies` from `src/engine/cards.js`; `isRunCard` from `src/engine/catalog.js` (both now exported on `BBJ`).
-- Produces:
-  - `planSellExtras(entries, { keep, keepJourney }) -> Array<{ key, foil: boolean, n }>`
-    - `entries` is `Array<{ key, name, journey: boolean, reg: number, foil: number, regValue: number, foilValue: number }>`.
-    - It groups entries by `name`. The protected count is `keepJourney` if any entry of that name is `journey`, otherwise `keep`.
-    - It sells `total − protected` copies, cheapest copies first. Ties: regular before foil, then `key` ascending.
-  - `starDrops(entries, plan) -> Array<{ name, from, to }>`: Journey names whose `starsFromCopies` value decreases.
-  - `dupesIn(list)` builds the entries per card name (from `NAME_KEYS`, `S.coll`, `S.foil`, `sellPrice`, `BBJ.isRunCard`) for the names in `list` (or all names when `null`). It returns today's `{ c, k, foil, n }` items, so `sellList` is unchanged.
-  - Sell-all: when `S.settings.keepJourney < 12` and `starDrops` is non-empty, the first click lists the drops in `#sellWarn` ("Sliced Ashes ★4 → ★3", …). The confirm click sells.
+- [ ] **Step 5: Commit.** `git add -A && git commit -m "feat(save): export/import save file with checksum and backup"`
 
-- [ ] **Step 1: Write the failing tests** `tests/unit/selling.test.mjs`:
-
-```js
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { planSellExtras, starDrops } from '../../src/economy/selling.js';
-const e = (key, name, journey, reg, foil, regValue = 1, foilValue = 3) => ({ key, name, journey, reg, foil, regValue, foilValue });
-test('journey card keeps 12 copies by default', () => {
-  assert.deepEqual(planSellExtras([e('TLA:1', 'Aang', true, 15, 0)], { keep: 4, keepJourney: 12 }), [{ key: 'TLA:1', foil: false, n: 3 }]);
-});
-test('non-journey card keeps the keep setting', () => {
-  assert.deepEqual(planSellExtras([e('TLA:300', 'Plains', false, 9, 0)], { keep: 4, keepJourney: 12 }), [{ key: 'TLA:300', foil: false, n: 5 }]);
-});
-test('protection counts all printings of a name; cheapest copies go first', () => {
-  const plan = planSellExtras([e('TLA:5', 'Katara', true, 8, 2, 0.5, 4), e('TLA:290', 'Katara', true, 4, 0, 2, 0)], { keep: 4, keepJourney: 12 });
-  assert.deepEqual(plan, [{ key: 'TLA:5', foil: false, n: 2 }]);
-});
-test('nothing to sell at or below protection', () => {
-  assert.deepEqual(planSellExtras([e('TLA:1', 'Aang', true, 12, 0)], { keep: 4, keepJourney: 12 }), []);
-});
-test('lowering journey protection reports star drops', () => {
-  const entries = [e('TLA:1', 'Aang', true, 12, 0)];
-  const plan = planSellExtras(entries, { keep: 4, keepJourney: 4 });
-  assert.deepEqual(starDrops(entries, plan), [{ name: 'Aang', from: 5, to: 3 }]);
-});
-```
-
-- [ ] **Step 2: Run to verify it fails.** Run `node --test tests/unit/selling.test.mjs`. Expected: FAIL, module not found.
-- [ ] **Step 3: Implement** `selling.js` and the glue listed above.
-- [ ] **Step 4: Add the browser group** `star-protected selling` to `tests/friends-beta.test.cjs`. Give a Journey card 14 copies and a basic land 9, then click sell-all twice. Expect 12 and 4 copies left. Set `keepJourney = 4`; the first sell-all click shows `#sellWarn` containing `★5 → ★3`.
-- [ ] **Step 5: Verify.** Run `npm test`. Expected: all suites pass, with unit `# pass` including the 5 selling tests and `PASS star-protected selling`.
-- [ ] **Step 6:** Commit: `feat(economy): sell extras never drops Journey stars`.
-
----
-
-### Task 6: Save export and import
-
-**Files:**
-- Create: `src/save/crc32.js`, `src/save/savefile.js`, `src/boosters/22-savefile.js`, `tests/unit/savefile.test.mjs`
-- Modify:
-  - `src/index.html`: Settings "Your save" block with `#exportSave`, `#importSave` (file input `#importFile`), `#importMsg`
-  - `build.config.json`: `22-savefile.js` after `20-gifts.js`
-  - `tests/friends-beta.test.cjs`
-
-**Interfaces:**
-- Produces:
-  - `crc32(text) -> string`: 8 lowercase hex characters, computed over the UTF-8 bytes. No `TextEncoder`; encode by hand.
-  - `SAVE_FILE_FORMAT = "bending-boosters-save"`, `SAVE_FILE_VERSION = 1`
-  - `saveKeys(storage) -> string[]`: keys starting with `bendingBoosters.` or `bb.`, except `bb.backup`, sorted.
-  - `exportSave(storage, now = Date.now()) -> { format, version, exportedAt, keys, checksum }`. `keys` is an object of raw strings. `checksum = crc32(JSON.stringify(keys))`, with keys inserted in sorted order.
-  - `parseSaveFile(text) -> { ok: true, keys } | { ok: false, error }`. Errors, exact strings:
-    - `"This file isn't a save file."` (not JSON)
-    - `"This isn't a Bending Boosters save."` (wrong `format`)
-    - `"This save was made by a newer version of the game."` (`version > 1`)
-    - `"This save file is damaged or was edited."` (checksum mismatch)
-    - `"This save has no wallet or collection in it."` (no `bendingBoosters.v1`)
-  - `importSave(storage, keys) -> { ok: true } | { ok: false, error }`:
-    1. Write `bb.backup = JSON.stringify({ at: ISO, keys: <current saveKeys values> })`.
-    2. Remove current `saveKeys` that aren't in `keys`, then write `keys`.
-    3. On any throw, restore every key from the backup and return `{ ok: false, error: "Couldn't import: browser storage is full or blocked. Your save was not changed." }`.
-  - UI:
-    - `#exportSave` downloads `bending-boosters-save-<localDay>.json` (Blob plus a temporary `<a download>`).
-    - `#importFile` change → `parseSaveFile` → an in-page confirm ("Replace your current save? A backup is kept.") → `importSave` → `location.reload()`.
-    - Errors show in `#importMsg`.
-
-- [ ] **Step 1: Write the failing tests** `tests/unit/savefile.test.mjs`. Include a `memStorage(init, { failOnSet })` helper implementing `length`, `key(i)`, `getItem`, `setItem` and `removeItem`.
-
-```js
-test('crc32 known vector', () => { assert.equal(crc32('123456789'), 'cbf43926'); });
-test('export includes bb.* and bendingBoosters.*, not bb.backup or others', () => {
-  const s = memStorage({ 'bendingBoosters.v1': '{"v":3}', 'bb.run': 'R', 'bb.backup': 'X', other: 'Y' });
-  assert.deepEqual(Object.keys(exportSave(s, 0).keys), ['bb.run', 'bendingBoosters.v1']);
-});
-test('round trip export → parse → import into another storage', () => {
-  const a = memStorage({ 'bendingBoosters.v1': '{"v":3,"money":9}', 'bb.run': 'R' });
-  const b = memStorage({ 'bendingBoosters.v1': '{"v":3,"money":1}', 'bb.prices': 'P' });
-  const p = parseSaveFile(JSON.stringify(exportSave(a, 0)));
-  assert.equal(p.ok, true); assert.deepEqual(importSave(b, p.keys), { ok: true });
-  assert.equal(b.getItem('bendingBoosters.v1'), '{"v":3,"money":9}');
-  assert.equal(b.getItem('bb.prices'), null);
-  assert.equal(JSON.parse(b.getItem('bb.backup')).keys['bendingBoosters.v1'], '{"v":3,"money":1}');
-});
-test('rejects bad files with the exact messages', () => {
-  const good = exportSave(memStorage({ 'bendingBoosters.v1': '{}' }), 0);
-  assert.equal(parseSaveFile('nope').error, "This file isn't a save file.");
-  assert.equal(parseSaveFile('{"a":1}').error, "This isn't a Bending Boosters save.");
-  assert.equal(parseSaveFile(JSON.stringify({ ...good, version: 2 })).error, 'This save was made by a newer version of the game.');
-  assert.equal(parseSaveFile(JSON.stringify({ ...good, keys: { ...good.keys, 'bb.run': 'x' } })).error, 'This save file is damaged or was edited.');
-  const empty = exportSave(memStorage({ 'bb.run': 'R' }), 0);
-  assert.equal(parseSaveFile(JSON.stringify(empty)).error, 'This save has no wallet or collection in it.');
-});
-test('failed import restores the previous save', () => {
-  const b = memStorage({ 'bendingBoosters.v1': 'OLD', 'bb.run': 'OLDRUN' }, { failOnSet: 'bb.run' });
-  const r = importSave(b, { 'bendingBoosters.v1': 'NEW', 'bb.run': 'NEWRUN' });
-  assert.equal(r.ok, false);
-  assert.equal(b.getItem('bendingBoosters.v1'), 'OLD'); assert.equal(b.getItem('bb.run'), 'OLDRUN');
-});
-```
-
-`failOnSet: 'bb.run'` makes `setItem('bb.run', …)` throw once, after `bendingBoosters.v1` has already been written.
-
-- [ ] **Step 2: Run to verify it fails.** Run `node --test tests/unit/savefile.test.mjs`. Expected: FAIL, module not found.
-- [ ] **Step 3: Implement** `crc32.js`, `savefile.js` and `22-savefile.js`.
-- [ ] **Step 4: Add the browser group** `export and import`:
-  1. Profile A opens 2 packs; click `#exportSave` and capture the download with `page.waitForEvent('download')`.
-  2. Profile B sets `#importFile` to that file and confirms; after the reload, `S.packs === 2` and the money matches A.
-  3. Importing a text file containing `nope` shows `This file isn't a save file.` in `#importMsg`, and B is unchanged.
-- [ ] **Step 5: Verify.** Run `npm test`. Expected: all pass.
-- [ ] **Step 6:** Commit: `feat(save): export and import save files with backup`.
-
----
-
-### Task 7: Resume card on home; Abandon pays out
-
-**Files:**
-- Create: `src/ui/run-store.js`, `src/boosters/21-resume.js`
-- Modify:
-  - `src/engine/run.js` (add `runBrief`, `abandonRun`)
-  - `src/ui/journey.js`:
-    - `:87`: `SAVE_KEY` → import `RUN_KEY`
-    - `:121-150`: `loadSave` uses `readSavedRun`
-    - `:245-272`: Abandon becomes two-step in-page
-    - `api`: add `resume`
-    - `renderSummary`: "Run abandoned" heading when `r.abandoned`
-  - `src/index.html`: home `#resumeCard` above `.lastHead`
-  - `src/boot.js`
-  - `build.config.json`: `21-resume.js` after `20-gifts.js`
-  - `tests/unit/smoke.test.mjs` → rename to `tests/unit/run.test.mjs`
-  - `tests/friends-beta.test.cjs`
-
-**Interfaces:**
-- Produces:
-  - `RUN_KEY = "bb.run"`
-  - `readSavedRun(epoch) -> run | null`: uses `deserialize`. It returns `null` on a parse error or when `(run.epoch || null) !== (epoch || null)`, and never deletes anything.
-  - `runBrief(run) -> { book, floor, hp, maxHp, deck: number, status }`
-  - `abandonRun(run) -> run`: sets `status = "lost"`, `abandoned = true`, `fight = null`, and `pending = null`. The payout is unchanged: `payout(run)` pays for fights already won.
-  - `api.resume() -> boolean`: resumes a saved run that is in progress (`map`/`node`/`fight`). This is the same code path as `#jxResume`.
-  - Journey Abandon: `#jxAbandon` → its label becomes "Click again to abandon (pays $X.XX)" for 3 seconds → second click → `abandonRun(saved)` → `st.run = saved` → `renderSummary()`, which settles. This replaces `confirm()`.
-  - `renderResumeCard()`:
-    - Fills `#resumeCard` with "Run in progress · Book {book}, floor {floor} · {hp}/{maxHp} HP · {deck} cards" and a `#resumeGo` button.
-    - It's hidden when there is no in-progress run.
-    - `#resumeGo` → `showView('journey'); JOURNEY.resume()`.
-    - Called from `src/boot.js`, from `showView('open')`, and after `settleJourney`.
-
-- [ ] **Step 1: Write the failing unit tests** in `tests/unit/run.test.mjs`. Build a run with `createRun({ seed: 'T', nation: 'water' })` after `setCatalog` (load `src/catalog/data.json`).
-  - `runBrief` returns `{ book: 1, floor: 0, hp: 60, maxHp: 60, deck: <starter deck length>, status: 'map' }`.
-  - `abandonRun` sets `status 'lost'` and `abandoned true`, and `payout()` equals `payout()` before abandoning.
-- [ ] **Step 2: Run to verify it fails.** Run `node --test tests/unit/run.test.mjs`. Expected: FAIL, `runBrief` is not exported.
-- [ ] **Step 3: Implement** the engine functions, `run-store.js`, the journey edits, `21-resume.js` and the boot call.
-- [ ] **Step 4: Add the browser group** `resume and abandon`:
-  1. `BBJ._newRun('RESUME', 'water'); BBJ._debugGoto('fight')`; `BBJ._debugForce('weak')` (enemy HP 1). Hover the first `.jx-hcard:not(.cant)`, then click its `[data-mode="strike"]` half (halves only take clicks while the card is hovered or focused). Take the reward and return to the map.
-  2. Reload: `#resumeCard` shows `Book 1` and `HP`. Clicking `#resumeGo` shows `#v-journey` with the map, and `BBJ._state.run.seed === 'RESUME'`.
-  3. On the Journey start screen, clicking `#jxAbandon` twice gives `S.money` increased by exactly the earned payout, removes `bb.run`, and shows "Run abandoned".
-- [ ] **Step 5: Verify.** Run `npm test`. Expected: all pass; the existing browser groups for resets and recovery still pass.
-- [ ] **Step 6:** Commit: `feat(journey): resume card on home; abandon pays what you earned`.
-
----
-
-### Task 8: First-time tips
-
-**Files:**
-- Create: `src/meta/tips.js`, `src/ui/tips.js`, `tests/unit/tips.test.mjs`
-- Modify:
-  - `src/boosters/15-header.js` (`showView`)
-  - `src/boosters/09-opening.js` (`stageOpen`)
-  - `src/ui/journey.js` (`renderStart`, `renderMap`, `renderFight`, after the first `onPlayCard` of a run, `renderNode` per kind)
-  - `src/boosters/22-savefile.js` (`#resetTips`)
-  - `src/index.html` (`#resetTips` in Settings)
-  - `src/boot.js`
-  - `src/styles/friends-beta.css`
-  - `tests/friends-beta.test.cjs`
-
-**Interfaces:**
-- Produces:
-  - `TIPS: Array<{ id, title, text }>`. The ids are exactly: `packs`, `reveal`, `collection`, `journey-start`, `map`, `fight`, `flow`, `shop`, `rest`, `event`. Each `text` is 1–2 sentences.
-  - `initTips(store)`: `store` is `{ isSeen(id): boolean, markSeen(id): void, reset(): void, enabled(): boolean }`.
-  - `showTip(id) -> boolean`: shows the tip card if it's enabled and unseen. One card at a time; later ids queue.
-  - `resetTips()`: calls `store.reset()`.
-  - The card element is `#tipCard`: `position: fixed`, top-right just below the header, `max-width: 340px`, `z-index` under `#modal`, with a "Got it" button `#tipOk` that calls `markSeen`.
-  - Boot store backed by `S.tips`:
-    - `enabled = () => !BB_DEBUG || !!S.settings.debugTips`
-    - `markSeen` saves
-    - `reset` clears `S.tips` and saves
-
-  Hook points:
-
-  | Id | Fires from |
-  |---|---|
-  | `packs` | `showView('open')` and boot on the home view |
-  | `reveal` | `stageOpen` |
-  | `collection` | `showView('collection')` |
-  | `journey-start` | `renderStart` |
-  | `map` | `renderMap` |
-  | `fight` | `renderFight` |
-  | `flow` | after the first card is played in a run |
-  | `shop` / `rest` / `event` | `renderNode` by `p.kind` |
-
-- [ ] **Step 1: Write the failing unit test** `tests/unit/tips.test.mjs`. It asserts that the ids equal the list above, in order; that ids are unique; and that every `text` has 1 to 220 characters.
-- [ ] **Step 2: Run to verify it fails.** Run `node --test tests/unit/tips.test.mjs`. Expected: FAIL, module not found.
-- [ ] **Step 3: Implement** the modules, hooks, boot store and CSS.
-- [ ] **Step 4: Add the browser group** `tips`:
-  1. `fresh({ debug: false })`: `#tipCard` shows the `packs` title. Click `#tipOk` and reload; the tip is not shown again.
-  2. Settings `#resetTips` → back on the home view the tip shows again.
-  3. In debug mode with `S.settings.debugTips = true`, start a fight. While `#tipCard` shows the `fight` tip, `page.locator('#jxEnd').click()` succeeds (no interception) and the turn advances (`BBJ._debugFight().turn === 2`).
-  4. In debug mode without `debugTips`, `#tipCard` never appears.
-- [ ] **Step 5: Verify.** Run `npm test`. Expected: all pass. The existing suites run in debug mode, so tips stay hidden there.
-- [ ] **Step 6:** Commit: `feat(meta): first-time tips with reset`.
-
----
-
-### Task 9: Cosmetic fixes
+### Task 10: Cosmetic fixes
 
 **Files:**
 - Modify:
-  - `src/ui/journey.js:290`: the label becomes `Empty charm slot`
-  - `src/styles/friends-beta.css`: `.jx-joker.emptyslot` gets an opaque background, `rgba(16, 26, 29, .92)` over the current border styling
-  - `tests/visual.test.cjs`: in the "populated loadout" group
+  - `src/styles/visual-edition.css`: in the rule `.jx-jokers.hudrow .jx-joker.emptyslot{…opacity:.65…}`, set `opacity:1;background:var(--panel)` and keep the dim look with `color:var(--dim)`. This rule loads last, so the fix must live here.
+  - `src/ui/journey.js`: "Empty Joker slot" → "Empty charm slot"; "Your Joker row is full" → "Your charm row is full".
+  - `tests/m1.test.cjs`
 
-- [ ] **Step 1: Write the failing assertions** in the visual group:
+- [ ] **Step 1: Write the failing m1 group** (`#debug`):
+  - `showView('journey'); BBJ._newRun('SLOTS','water')`;
+  - `const s = p.locator('.jx-joker.emptyslot').first()`;
+  - assert `await s.innerText() === 'Empty charm slot'`;
+  - assert `getComputedStyle(el).opacity === '1'` and `getComputedStyle(el).backgroundColor` matches `/^rgb\(/` (fully opaque, not `rgba(…, 0)`).
 
-```js
-assert(!(await p.content()).includes('Empty Joker slot'));
-const alpha = await p.evaluate(() => { const e = document.querySelector('.jx-joker.emptyslot'); const m = getComputedStyle(e).backgroundColor.match(/rgba?\(([^)]+)\)/)[1].split(',').map(Number); return m.length === 4 ? m[3] : 1; });
-assert(alpha >= 0.9, 'empty charm slot must hide the backdrop');
-```
+- [ ] **Step 2: Run.** It should FAIL.
 
-  Use a loadout with fewer than 5 charms so empty slots render; the map screen of a fresh run works.
-- [ ] **Step 2: Run to verify it fails.** Run `node tools/build.mjs && node tests/visual.test.cjs`. Expected: FAIL, `Empty Joker slot` is present.
-- [ ] **Step 3: Implement** both edits.
-- [ ] **Step 4: Verify.** Run `npm test`. Expected: all pass. Run `npm run screens` and inspect `test-output/screens/12-map.png` and `14-shop.png`: there should be no ghost circle behind the last empty slot.
-- [ ] **Step 5:** Commit: `fix(ui): opaque empty charm slots; say charm, not joker`.
+- [ ] **Step 3: Apply** the two edits.
 
----
+- [ ] **Step 4: Verify.** `npm test` → PASS. Run `npm run screens` and check `12-map.png` at 1440×1000: no circle shows through the charm row.
 
-### Task 10: Hosting, docs and M1 exit check
+- [ ] **Step 5: Commit.** `git commit -am "fix: opaque empty charm slots; say charm, not Joker"`
+
+### Task 11: Publishing, docs, final check
 
 **Files:**
 - Create: `.github/workflows/pages.yml`
-- Modify: `README.md` (Quick start: hosted link, daily gift, economy; Tests: unit tests and `friends-beta.test.cjs`), `AGENTS.md` (economy numbers live in `src/economy/config.js`)
+- Modify: `package.json` (add `"pages": "node tools/build.mjs --out _site/index.html"`), `.gitignore` (add `_site/`), `README.md`
 
 **Interfaces:**
-- Produces a workflow that, on push to `main`:
-  1. checks out the repo;
-  2. sets up Node 22;
-  3. runs `node tools/build.mjs`;
-  4. copies `dist/bending-boosters.html` to `_site/index.html`;
-  5. runs `actions/upload-pages-artifact@v3` with `path: _site`;
-  6. deploys with `actions/deploy-pages@v4`.
+- The workflow triggers on push to `main` and on `workflow_dispatch`.
+- Permissions: `contents: read`, `pages: write`, `id-token: write`.
+- **Build job** (with env `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1`):
+  1. `actions/checkout@v4`
+  2. `actions/setup-node@v4` with Node 22
+  3. `npm ci`
+  4. `npm run test:quick`
+  5. `npm run pages`
+  6. `actions/upload-pages-artifact@v3` with path `_site`
+- **Deploy job:** `actions/deploy-pages@v4` in the `github-pages` environment.
+- README gains three sections:
+  - **"Economy"**: the values from Global Constraints.
+  - **"Saves"**: export/import, backups, and the save versions.
+  - **"Publishing"**:
+    1. create a public GitHub repo;
+    2. `git remote add origin …` and `git push -u origin main`;
+    3. Settings → Pages → Source: GitHub Actions;
+    4. share the Pages URL.
 
-  Permissions: `pages: write`, `id-token: write`, `contents: read`. Concurrency group: `pages`.
+    Also how to move existing progress: open `dist/bending-boosters.html` from disk in the same browser as the old Desktop copy, use Export, then Import on the hosted site.
 
-- [ ] **Step 1: Confirm with the owner** (spec §13): a public GitHub repo with Pages (default), or private plus Cloudflare Pages/Netlify. If the answer is private, replace this task's workflow with that host's "deploy a static folder" setup, publishing the same `_site/index.html`.
-- [ ] **Step 2:** Write `pages.yml`. Create the repo (`gh repo create bending-boosters --public --source . --push` when the owner approves) and set Pages → Source → GitHub Actions.
-- [ ] **Step 3: Verify the deploy.** The Actions run is green. Then run `tests/friends-beta.test.cjs`'s `first launch`, `free pack` and `next day` groups against the Pages URL (temporarily set `env.GAME` to the URL) and expect PASS.
-- [ ] **Step 4: Run the M1 exit check.**
-  - `npm test`: all green.
-  - `npm run screens`: inspect the home screen (gift panel, free-pack button, resume card), Settings (save block, reset tips), a fight with a tip, and the map.
-  - Move the owner's progress. The Desktop build has no Export button, but Chromium-based browsers share localStorage between all `file://` pages.
-    1. In the browser the owner plays in, open `dist/bending-boosters.html` from disk. Their wallet and collection should show, migrated to v3.
-    2. Settings → Export.
-    3. On the hosted link, Settings → Import. Progress should carry over.
-    4. If step 1 shows a fresh wallet (a non-Chromium browser), stop and ask the owner before trying anything else.
-- [ ] **Step 5:** Commit: `chore: deploy to GitHub Pages; M1 docs`.
+- [ ] **Step 1: Validate locally.** Run `npm ci && npm run test:quick && npm run pages` → `_site/index.html` exists and `node tools/build.mjs --check _site/index.html` prints "identical".
+
+- [ ] **Step 2: Add** the workflow and the README sections.
+
+- [ ] **Step 3: Full verification.**
+  - `npm test` → all suites PASS, ending with `ALL M1 CHECKS PASSED`.
+  - `npm run screens` → review home (gift banner, free-pack button, resume card), settings (save file block, protect, tips) and fight (no tip over End turn).
+  - `sha256sum ~/Desktop/bending-boosters\(4\).html` still prints `433b99c5…e0d0ce`.
+
+- [ ] **Step 4: Commit.** `git add -A && git commit -m "ci: publish to GitHub Pages; docs for economy, saves, publishing"`
+
+- [ ] **Step 5: Owner step.** Create the repo, push, enable Pages, and open the URL in a fresh browser profile. Expect $55, 4 free packs and the packs tip.
