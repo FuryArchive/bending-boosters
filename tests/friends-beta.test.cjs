@@ -137,6 +137,30 @@ async function group(name, fn) {
       await ctx.close();
     });
 
+    await group('export and import', async () => {
+      const A = await fresh();
+      await A.page.evaluate(() => { tryOpen(2); stageClose(); });
+      const want = await state(A.page);
+      assert.equal(want.packs, 2);
+      await A.page.evaluate(() => showView('settings'));
+      const [dl] = await Promise.all([A.page.waitForEvent('download'), A.page.locator('#exportSave').click()]);
+      const file = await dl.path();
+      const B = await fresh();
+      await B.page.evaluate(() => showView('settings'));
+      await B.page.locator('#importFile').setInputFiles(file);
+      await Promise.all([B.page.waitForEvent('load'), B.page.locator('#importYes').click()]);
+      const got = await state(B.page);
+      assert.equal(got.packs, 2); assert.equal(got.money, want.money);
+      const bad = require('node:path').join(require('node:os').tmpdir(), 'bb-not-a-save.json');
+      require('node:fs').writeFileSync(bad, 'nope');
+      await B.page.evaluate(() => showView('settings'));
+      await B.page.locator('#importFile').setInputFiles(bad);
+      await B.page.waitForFunction(() => document.getElementById('importMsg').textContent.length > 0); // file is read asynchronously
+      assert.match(await B.page.locator('#importMsg').innerText(), /This file isn't a save file\./);
+      assert.equal((await state(B.page)).packs, 2);
+      await A.ctx.close(); await B.ctx.close();
+    });
+
     assert.deepEqual(errors, []);
     console.log(`ALL FRIENDS-BETA CHECKS PASSED (${groups} groups; no page errors)`);
   } finally {

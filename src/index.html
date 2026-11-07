@@ -187,6 +187,9 @@
           <span class="h">Same seed + same actions = same pulls. Resetting clears collection, wallet, stats and the active Journey.</span></div>
         <div class="field" id="econStart"><label>Starting money on reset ($)</label><input type="number" id="sStart" min="0"></div>
         <div class="field"><label>Image cache</label><div class="row"><button class="btn" id="refreshImgs">Re-download image index</button><span class="h" id="imgInfo"></span></div></div>
+        <h3>Your save</h3>
+        <div class="row"><button class="btn" id="exportSave">Export save</button><label class="btn" id="importSave" for="importFile">Import save…</label><input type="file" id="importFile" accept=".json,application/json" hidden></div>
+        <p class="h" id="importMsg"></p>
         <h3>Danger zone</h3>
         <div class="row"><button class="btn" id="resetAll">Reset everything</button><span class="h" id="resetConfirm"></span></div>
         <h3>About</h3>

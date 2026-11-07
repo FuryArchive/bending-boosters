@@ -6,4 +6,5 @@ export { claimDaily } from "../economy/daily.js";
 export { planSellExtras, starDrops } from "../economy/selling.js";
 export { isRunCard } from "../engine/catalog.js";
 export { MAIN_SAVE_VERSION, freshMainFields, migrateMain } from "../save/migrate.js";
+export { exportSave, importSave, parseSaveFile } from "../save/savefile.js";
 export var version = "m1";

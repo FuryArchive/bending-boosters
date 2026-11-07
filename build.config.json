@@ -59,7 +59,8 @@
       "src/boosters/17-journey-mount.js",
       "src/boosters/18-settings.js",
       "src/boosters/19-wire-up.js",
-      "src/boosters/20-gifts.js"
+      "src/boosters/20-gifts.js",
+      "src/boosters/22-savefile.js"
     ],
     "journey": [
       {
@@ -92,6 +93,8 @@
             "src/economy/daily.js",
             "src/economy/selling.js",
             "src/save/migrate.js",
+            "src/save/crc32.js",
+            "src/save/savefile.js",
             "src/ui/journey.js"
           ]
         }
