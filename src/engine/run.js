@@ -209,3 +209,13 @@ export function deserialize(str) {
   }
   return run;
 }
+export function runBrief(run) {
+  return { book: run.book, floor: run.floor, hp: run.hp, maxHp: run.maxHp, deck: run.deck.length, status: run.status };
+}
+export function abandonRun(run) {
+  run.status = "lost";
+  run.abandoned = true;
+  run.fight = null;
+  run.pending = null;
+  return run;
+}

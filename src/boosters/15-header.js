@@ -17,6 +17,7 @@ document.getElementById('tabs').addEventListener('click',e=>{ const b=e.target.c
 function showView(v){
   document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
   document.querySelectorAll('section.view').forEach(x=>x.classList.toggle('on',x.id==='v-'+v));
+  if(v==='open') renderResumeCard();
   if(v==='collection') renderCollection();
   if(v==='decks') renderDecks();
   if(v==='journey') mountJourneyOnce();

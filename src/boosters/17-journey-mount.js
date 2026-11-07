@@ -15,6 +15,7 @@ function settleJourney(id,amount,r){
   refreshHeader();
   if(document.getElementById('v-stats').classList.contains('on')) renderStats();
   toast(`+$${amount.toFixed(2)} from your journey`);
+  renderResumeCard();
   return true;
 }
 function mountJourneyOnce(){

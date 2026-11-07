@@ -161,6 +161,35 @@ async function group(name, fn) {
       await A.ctx.close(); await B.ctx.close();
     });
 
+    await group('resume and abandon', async () => {
+      const { page, ctx } = await fresh();
+      await page.evaluate(() => { showView('journey'); BBJ._newRun('RESUME', 'water'); BBJ._debugGoto('fight'); });
+      await page.waitForFunction(() => BBJ._state.screen === 'fight');
+      await page.evaluate(() => BBJ._debugForce('weak'));
+      const card = page.locator('.jx-hcard:not(.cant)').first();
+      await card.hover();
+      await card.locator('[data-mode="strike"]').click();
+      await page.waitForFunction(() => (JSON.parse(localStorage.getItem('bb.run') || 'null') || { stats: {} }).stats.fights === 1);
+      await page.evaluate(() => history.replaceState(null, '', '#debug'));
+      await page.reload();
+      const card2 = await page.locator('#resumeCard').innerText();
+      assert.match(card2, /Book 1/); assert.match(card2, /HP/);
+      await page.locator('#resumeGo').click();
+      assert.equal(await page.evaluate(() => document.getElementById('v-journey').classList.contains('on')), true);
+      assert.equal(await page.evaluate(() => BBJ._state.run && BBJ._state.run.seed), 'RESUME');
+      assert.notEqual(await page.evaluate(() => BBJ._state.screen), 'start');
+      await page.evaluate(() => history.replaceState(null, '', '#debug'));
+      await page.reload();
+      await page.evaluate(() => showView('journey'));
+      const before = await page.evaluate(() => S.money);
+      await page.locator('#jxAbandon').click();
+      await page.locator('#jxAbandon').click();
+      await page.waitForFunction(() => !localStorage.getItem('bb.run'));
+      assert.equal(await page.evaluate(() => S.money), before + 1);
+      assert.match(await page.locator('.jx-summary h2').innerText(), /Run abandoned/);
+      await ctx.close();
+    });
+
     assert.deepEqual(errors, []);
     console.log(`ALL FRIENDS-BETA CHECKS PASSED (${groups} groups; no page errors)`);
   } finally {

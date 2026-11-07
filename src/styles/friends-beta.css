@@ -5,3 +5,5 @@
 .buy.free{border-color:#7ee08a88;background:linear-gradient(135deg,#1f3b2a,#173024)}
 .buy.free b{color:#bff5c8}
 .sellWarn{color:#e8b07c;margin-left:10px}
+.resumeCard{display:flex;align-items:center;gap:14px;margin:12px 0 4px;padding:12px 18px;border-color:#5aa7e066}
+.resumeCard .grow{flex:1}

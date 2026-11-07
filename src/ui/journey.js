@@ -25,6 +25,7 @@ import {
   useOffering,
 } from "../engine/nodes.js";
 import {
+  abandonRun,
   availableNodes,
   createRun,
   currentMap,
@@ -55,6 +56,7 @@ import {
   titleCard,
   wipe,
 } from "./fx.js";
+import { RUN_KEY } from "./run-store.js";
 
 var ELEM_COLOR = { Air: "#f2c46d", Water: "#5aa7e0", Fire: "#e8543a", Earth: "#6fa356", Spirit: "#9a7bd1", Neutral: "#b9ab95" };
 var GLYPH = {
@@ -84,7 +86,6 @@ var COIN = '<i class="jx-coinico" aria-hidden="true"></i>';
 var NODE_ICON = { fight: "\u2694", elite: "\u{1F480}", shop: "\u{1F6D2}", rest: "\u{1F525}", event: "\u2753", treasure: "\u{1F4E6}", boss: "\u{1F451}" };
 var NODE_NAME = { fight: "Fight", elite: "Elite", shop: "Shop", rest: "Rest site", event: "Event", treasure: "Treasure", boss: "Book boss" };
 var TIER_COLOR = { common: "#b9ab95", uncommon: "#9cc6e8", rare: "#e8c25a", mythic: "#f07a3a" };
-var SAVE_KEY = "bb.run";
 export function mountJourney(root, legacy) {
   const L = legacy;
   const S = L.S;
@@ -123,7 +124,7 @@ export function mountJourney(root, legacy) {
     if (!st.run.id) st.run.id = window.crypto?.randomUUID?.() || `run-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     if (st.run.epoch === undefined) st.run.epoch = S.runEpoch || null;
     try {
-      localStorage.setItem(SAVE_KEY, serialize(st.run));
+      localStorage.setItem(RUN_KEY, serialize(st.run));
       return true;
     } catch (e) {
       return false;
@@ -131,7 +132,7 @@ export function mountJourney(root, legacy) {
   }
   function loadSave() {
     try {
-      const s = localStorage.getItem(SAVE_KEY);
+      const s = localStorage.getItem(RUN_KEY);
       const run = s ? deserialize(s) : null;
       if (run && (run.epoch || null) !== (S.runEpoch || null)) {
         clearSave(); // An earlier reset already invalidated this stale second key.
@@ -144,7 +145,7 @@ export function mountJourney(root, legacy) {
   }
   function clearSave() {
     try {
-      localStorage.removeItem(SAVE_KEY);
+      localStorage.removeItem(RUN_KEY);
     } catch (e) {
     }
   }
@@ -256,20 +257,35 @@ export function mountJourney(root, legacy) {
       if (st.nation) startRun();
     };
     if ($("#jxResume")) {
-      $("#jxResume").onclick = () => {
-        st.run = saved;
-        st.nation = saved.nation;
-        st.bookShown = null;
-        st.lastGold = st.lastHp = null;
-        go();
-      };
+      $("#jxResume").onclick = () => resumeSaved(saved);
+      let abandonArmed = false;
       $("#jxAbandon").onclick = () => {
-        if (confirm("Abandon this run? It pays nothing.")) {
-          clearSave();
-          renderStart();
+        const b = $("#jxAbandon");
+        if (!abandonArmed) {
+          abandonArmed = true;
+          const label = b.textContent;
+          b.textContent = `Click again to abandon (pays $${payout(saved).toFixed(2)})`;
+          setTimeout(() => {
+            if (abandonArmed && b.isConnected) {
+              abandonArmed = false;
+              b.textContent = label;
+            }
+          }, 3e3);
+          return;
         }
+        abandonArmed = false;
+        st.run = abandonRun(saved);
+        st.nation = saved.nation;
+        renderSummary();
       };
     }
+  }
+  function resumeSaved(saved) {
+    st.run = saved;
+    st.nation = saved.nation;
+    st.bookShown = null;
+    st.lastGold = st.lastHp = null;
+    go();
   }
   function startRun(seed) {
     seed = seed || (S.settings.jseedNext || Math.random().toString(36).slice(2, 8).toUpperCase());
@@ -728,7 +744,7 @@ export function mountJourney(root, legacy) {
     else sfx.lose();
     const fl = (r.book - 1) * 15 + r.floor;
     root.innerHTML = `<div class="jx-between jx-summary ${won2 ? "won" : "lost"}">
-    <h2>${won2 ? "The Phoenix King falls" : "Your journey ends here"}</h2>
+    <h2>${won2 ? "The Phoenix King falls" : r.abandoned ? "Run abandoned" : "Your journey ends here"}</h2>
     <p class="note">${won2 ? "All three Books cleared." : `Defeated in ${BOOK_INFO[r.book].kicker}, floor ${r.floor}.`} Seed ${L.esc(r.seed)}.</p>
     <div class="jx-payout"><span>${settled ? 'Paid to your wallet' : 'Payout pending — browser storage could not save it'}</span><b id="jxPayout">+$${pay.toFixed(2)}</b></div>
     ${settled ? '' : '<p class="note">Your run has not been cleared. Free browser storage, then retry before starting another run.</p><button class="btn primary" id="jxRetryPayout">Retry payout</button>'}
@@ -1572,6 +1588,12 @@ export function mountJourney(root, legacy) {
       peek(null, false);
       root.dataset.book = ''; bd.setTheme('none'); bd.setHeat(0); setIdle(true);
       renderStart();
+    },
+    resume() {
+      const saved = loadSave();
+      if (!saved || !["map", "node", "fight"].includes(saved.status)) return false;
+      resumeSaved(saved);
+      return true;
     },
     _state: st,
     _newRun(seed, nation) {
