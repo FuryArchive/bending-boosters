@@ -1,6 +1,7 @@
 import { actValue, guardValue, strikeValue, tokenCard } from "./cards.js";
 import { checkPhase, enemyAct, intentDamage, makeEnemyState, pendingCopyBonus } from "./enemy.js";
-import { jokerOpts, jokerPatch } from "./jokers.js";
+import { jokerOpts, jokerPatch, mergePatch } from "./jokers.js";
+import { mechFlow, mechanicsFor, surgeOf } from "./mechanics.js";
 
 var ENERGY = 4;
 var CARRY_MAX = 2;
@@ -11,7 +12,6 @@ var HASTE_BONUS = 4;
 var HAUNT_MULT = 1.25;
 var EXECUTE_PCT = 0.15;
 var TIDE_BONUS = 2;
-var BENDING = ["Air", "Water", "Earth", "Fire"];
 export function modesFor(c) {
   const s = c.baseStrike > 0, g = c.baseGuard > 0;
   return s && g ? ["strike", "guard"] : s ? ["strike"] : g ? ["guard"] : ["play"];
@@ -25,7 +25,7 @@ function elementsOf(f, c) {
   for (const e of c.elements) if (alias[e] && !out.includes(alias[e])) out.push(alias[e]);
   return out;
 }
-export function createFight({ deck, player, enemy, jokers = [], jstate = {}, rng, rule = null, elementCounts = {} }) {
+export function createFight({ deck, player, enemy, jokers = [], jstate = {}, rng, rule = null, elementCounts = {}, sets }) {
   const f = {
     turn: 0,
     energy: 0,
@@ -60,6 +60,7 @@ export function createFight({ deck, player, enemy, jokers = [], jstate = {}, rng
     jokers,
     jstate,
     opts: jokerOpts(jokers),
+    mech: mechanicsFor(sets),
     rng,
     rule,
     result: "ongoing",
@@ -147,7 +148,7 @@ function resolve(ctx, f, c, mode) {
   const prev = ctx.prev, same = !!prev && els.some((e) => e !== "Neutral" && prev.el.includes(e));
   const diff = prev ? c.rank - prev.rank : null, path = !!prev && (diff === 1 || o.pathSkip && diff === 2);
   const x = { same, path, els };
-  const jc = suppressed ? {} : jokerPatch("onCard", f.jokers, [c, mode, ctx, f, x], f.jstate);
+  const jc = suppressed ? {} : mergePatch(jokerPatch("onCard", f.jokers, [c, mode, ctx, f, x], f.jstate), jokerPatch("onCard", f.mech, [c, mode, ctx, f, x], f.jstate));
   const tideHit = ctx.tide && mode === "strike" && els.includes("Water");
   const flowNow = ctx.flow + (tideHit ? TIDE_BONUS : 0) + (jc.flowNow || 0);
   const res = {
@@ -197,10 +198,11 @@ function resolve(ctx, f, c, mode) {
   else res.flowAct = 0;
   // Suppression keeps play/chain/keyword Flow and tracking, not effect Flow or Joker triggers.
   const jg = suppressed ? {} : jokerPatch("onChain", f.jokers, [c, mode, ctx, f, x], f.jstate);
-  res.gain = 1 + (same ? 1 : 0) + (path ? o.pathBonus : 0) + (c.role === "instant" ? 1 : 0) + (kw.firebending || 0) + (kw.prowess && ctx.lastWasNoncreature ? 1 : 0) + res.flowAct + (jg.flow || 0);
+  res.gain = 1 + (same ? 1 : 0) + (path ? o.pathBonus : 0) + (c.role === "instant" ? 1 : 0) + mechFlow(f, c, ctx) + (kw.prowess && ctx.lastWasNoncreature ? 1 : 0) + res.flowAct + (jg.flow || 0);
   let flowAfter = flowNow + res.gain;
-  let elements = [.../* @__PURE__ */ new Set([...ctx.elements, ...els.filter((e) => BENDING.includes(e))])], avatarCount = ctx.avatarCount;
-  if (BENDING.every((e) => elements.includes(e)) && avatarCount < o.avatarTimes) {
+  const surge = surgeOf(f);
+  let elements = surge ? [.../* @__PURE__ */ new Set([...ctx.elements, ...els.filter((e) => surge.els.includes(e))])] : ctx.elements.slice(), avatarCount = ctx.avatarCount;
+  if (surge && surge.els.every((e) => elements.includes(e)) && avatarCount < o.avatarTimes) {
     flowAfter *= o.avatarMult;
     avatarCount++;
     res.avatar = true;
@@ -373,7 +375,7 @@ function applyResult(f, c, res, events) {
 export function endTurn(f) {
   if (f.result !== "ongoing") throw new Error("fight over");
   const events = [{ t: "endTurn" }];
-  const je = jokerPatch("onTurnEnd", f.jokers, [f], f.jstate, events);
+  const je = mergePatch(jokerPatch("onTurnEnd", f.jokers, [f], f.jstate, events), jokerPatch("onTurnEnd", f.mech, [f], f.jstate));
   if (je.strikeAgain && f.chain.length === 1 && f.chain[0].mode === "strike") {
     const d = f.chain[0].dmg * je.strikeAgain;
     f.enemy.hp -= d;
@@ -483,7 +485,7 @@ function turnStartEffects(f, events) {
     }
     events.push({ t: "power", uid: pw.uid, k: fx.k, n });
   }
-  const p = jokerPatch("onTurnStart", f.jokers, [f], f.jstate, events);
+  const p = mergePatch(jokerPatch("onTurnStart", f.jokers, [f], f.jstate, events), jokerPatch("onTurnStart", f.mech, [f], f.jstate));
   if (p.block) f.player.block += p.block;
   if (p.flow) f.flow += p.flow;
   if (p.energy) f.energy += p.energy;

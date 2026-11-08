@@ -28,6 +28,16 @@ export function jokerPatch(hook, jokers, args, state, events) {
   }
   return out;
 }
+// Combine two hook patches: numbers add, xdmg multiplies, flags OR.
+export function mergePatch(a, b) {
+  const out = { ...a };
+  for (const [k, v] of Object.entries(b || {})) {
+    if (typeof v === "boolean") out[k] = !!out[k] || v;
+    else if (k === "xdmg") out.xdmg = (out.xdmg || 1) * v;
+    else out[k] = (out[k] || 0) + v;
+  }
+  return out;
+}
 export function jokerOpts(jokers) {
   const o = { avatarMult: 2, avatarTimes: 1, pathBonus: 1, pathSkip: false, alias: {} };
   for (const j of jokers || []) if (j.opts) j.opts(o);

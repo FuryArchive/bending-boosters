@@ -1,4 +1,4 @@
-import { OVERRIDES } from "../data/overrides.js";
+import { mechAct, mechFinish, mechKeyword, mechPrepare, mechText } from "./mechanics.js";
 
 var ELEM = { W: "Air", U: "Water", B: "Spirit", R: "Fire", G: "Earth" };
 var KW = {
@@ -74,8 +74,6 @@ function actOf(e, on, rc) {
       return { k: "hit", n: 2 * n, on, drain: 0.5 };
     case "ramp":
       return { k: "energy", n: 1, on };
-    case "earth":
-      return { k: "block", n: 3 + 2 * n, on, stone: true };
     default:
       return null;
   }
@@ -139,10 +137,8 @@ export function toRunCard(card, opts = {}) {
   const [p, t] = card.pt ? card.pt.split("/") : ["0", "0"];
   const keywords = {};
   (card.kw || []).forEach((k) => {
-    const fb = k.match(/^Firebending (\d+)/);
-    if (fb) keywords.firebending = +fb[1];
-    else if (k === "Firebending") keywords.firebending = 1;
-    else if (KW[k]) keywords[KW[k]] = true;
+    if (KW[k]) keywords[KW[k]] = true;
+    else mechKeyword(card, k, keywords);
   });
   const cols = (card.col || "").split("").filter((x) => ELEM[x]);
   const rank = manaValue(card.cost), power = isCreature ? ptVal(p) : 0, toughness = isCreature ? ptVal(t) : 0;
@@ -159,7 +155,7 @@ export function toRunCard(card, opts = {}) {
     isCreature,
     isAlly: isCreature && /\bAlly\b/.test(type),
     isLegendary: /Legendary/.test(type),
-    isLesson: /Lesson/.test(type),
+    isLesson: false,
     keywords,
     acts: [],
     powerFx: null,
@@ -172,8 +168,9 @@ export function toRunCard(card, opts = {}) {
     baseStrike: 0,
     baseGuard: 0
   };
+  mechPrepare(card, rc);
   for (const [k, list] of Object.entries(card.fx || {})) for (const e of list) {
-    const a = actOf(e, ON[k] || "play", rc);
+    const a = actOf(e, ON[k] || "play", rc) || mechAct(card, e, ON[k] || "play", rc);
     if (a) rc.acts.push(a);
   }
   if (isCreature) {
@@ -183,8 +180,7 @@ export function toRunCard(card, opts = {}) {
   if (!isCreature && rc.role !== "power" && !rc.acts.some((a) => VALUE_ACTS.has(a.k))) rc.acts.push(fallbackAct(rc));
   rc.tags = [...new Set(rc.elements.map((el) => tagFor(el, rc)))];
   if (rc.role === "power") rc.powerFx = powerFxFor(rc);
-  const ov = OVERRIDES[card.name];
-  if (ov) Object.assign(rc, structuredClone(ov), { keywords: { ...rc.keywords, ...ov.keywords || {} } });
+  mechFinish(card, rc);
   applyTagMechanics(rc);
   if (opts.upgraded) upgradeCard(rc);
   return rc;
@@ -343,7 +339,7 @@ var KW_TEXT = {
 export function actLines(rc) {
   const lines = rc.acts.map((a) => ON_TEXT[a.on || "play"] + ACT_TEXT[a.k](actValue(rc, a), a));
   if (rc.powerFx) lines.push("Power: each turn, " + POWER_TEXT[rc.powerFx.k](rc.powerFx.n, rc.powerFx));
-  if (rc.keywords.firebending) lines.push(`Firebending ${rc.keywords.firebending}`);
+  lines.push(...mechText(rc));
   if (rc.hpCost) lines.push(`Costs ${rc.hpCost} HP`);
   return lines;
 }

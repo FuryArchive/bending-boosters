@@ -84,6 +84,12 @@ Every module ends up in **one shared scope**, so the Journey modules follow a fe
 
 **Why not just run esbuild?** After the original esbuild build, later passes edited the bundle by hand: the bug-fix comments in the engine and the hand-written backdrop drawing code. Running esbuild would reformat those parts. It would still work (esbuild 0.28 bundles these sources fine), but the output would no longer match the shipped game exactly. Switching to esbuild later is a small change to the `journey` slot if you ever want it.
 
+## Set mechanics
+
+Rules that belong to one card set live with that set, not in the engine. TLA's Firebending, Earthbend, Lessons, curated card overrides (`src/data/overrides.js`) and Avatar State are in `src/sets/tla/mechanics.js`. The engine keeps the generic rules: Strike/Guard, Flow, damage, Block, statuses, draw, energy and tokens.
+
+A mechanic is a plain object registered in `src/content.js`. Its hooks (card conversion, keyword Flow, on Strike/Guard/play, turn start/end, and an optional Flow "surge") are documented at the top of `src/engine/mechanics.js`. Card-conversion hooks see only their own set's cards; fight hooks run only in fights whose run includes that set.
+
 ## Tests
 
 | Command | What it runs |

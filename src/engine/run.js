@@ -1,5 +1,6 @@
 import { jokerOpts } from "./jokers.js";
 import { createFight, endTurn, playCard } from "./flow.js";
+import { mechanicsFor } from "./mechanics.js";
 import { createRng, hashStr, withRng } from "./rng.js";
 import { generateBook, nodeById, startNodes } from "./map.js";
 import { starterDeck } from "./pools.js";
@@ -91,7 +92,8 @@ export function enterNode(run, id) {
         jstate: run.jstate,
         rng: createRng(rng.int(2 ** 31)),
         rule: enemy.rule || null,
-        elementCounts: run.stats.elementCounts
+        elementCounts: run.stats.elementCounts,
+        sets: run.sets
       });
       run.fight.enemy.maxHp = Math.max(run.fight.enemy.maxHp, run.fight.enemy.hp);
       run.status = "fight";
@@ -187,7 +189,7 @@ export function serialize(run) {
   const out = { ...run };
   if (run.fight) {
     const f = run.fight;
-    out.fight = { ...f, rng: void 0, rngState: f.rng.getState(), jokers: void 0, jstate: void 0, opts: void 0, log: [] };
+    out.fight = { ...f, rng: void 0, rngState: f.rng.getState(), jokers: void 0, jstate: void 0, opts: void 0, mech: void 0, log: [] };
   }
   return JSON.stringify(out);
 }
@@ -205,6 +207,7 @@ export function deserialize(str) {
     f.jokers = liveJokers(run);
     f.jstate = run.jstate;
     f.opts = jokerOpts(f.jokers);
+    f.mech = mechanicsFor(run.sets);
     f.log = [];
   }
   return run;

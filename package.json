@@ -7,8 +7,8 @@
   "scripts": {
     "build": "node tools/build.mjs",
     "check": "node tools/check-modules.mjs",
-    "test": "node tools/build.mjs && node tools/check-modules.mjs && node --test tests/unit/*.test.mjs && node tests/combat.test.cjs && node tests/progression.test.cjs --browser && node tests/browser.test.cjs && node tests/visual.test.cjs && node tests/friends-beta.test.cjs",
-    "test:quick": "node tools/build.mjs && node tools/check-modules.mjs && node --test tests/unit/*.test.mjs && node tests/combat.test.cjs && node tests/progression.test.cjs",
+    "test": "node tools/build.mjs && node tools/check-modules.mjs && node --test tests/unit/*.test.mjs && node tests/combat.test.cjs && node tests/progression.test.cjs --browser && node tests/legacy-parity.test.cjs && node tests/browser.test.cjs && node tests/visual.test.cjs && node tests/friends-beta.test.cjs",
+    "test:quick": "node tools/build.mjs && node tools/check-modules.mjs && node --test tests/unit/*.test.mjs && node tests/combat.test.cjs && node tests/progression.test.cjs && node tests/legacy-parity.test.cjs",
     "test:unit": "node --test tests/unit/*.test.mjs",
     "screens": "node tools/build.mjs && node tools/capture.cjs",
     "extract": "node tools/extract.mjs"
