@@ -41,7 +41,7 @@ function renderOdds(){
   sel.hidden=SET_PACKAGES.length<2; sel.onchange=renderOdds;
   const code=oddsSet(), base=pkgBase(code), etCode=(pkgEternal(code)[0]||{}).set||'Eternal';
   document.getElementById('oddsNote').innerHTML=PKG[code].products.play.note;
-  const sp=x=>x.spec.src==='treat'?(TREAT_INFO[x.spec.sheet]?.label||x.spec.sheet):x.spec.src==='eternal'?`Eternal (${etCode}) reprint`:x.spec.src==='names'?'Common dual land':x.spec.src==='nums'?'Basic land':({C:'Common',U:'Uncommon',R:'Rare',M:'Mythic'})[x.r];
+  const sp=x=>x.spec.src==='treat'?(PKG[code].sheets[x.spec.sheet]?.label||x.spec.sheet):x.spec.src==='eternal'?`Eternal (${etCode}) reprint`:x.spec.src==='names'?'Common dual land':x.spec.src==='nums'?'Basic land':({C:'Common',U:'Uncommon',R:'Rare',M:'Mythic'})[x.r];
   document.getElementById('slotTable').innerHTML=slotsOf(code).map(s=>{
     const d=slotDist(s,code);
     return `<h3>${s.n>1?s.n+'× ':''}${s.label}${s.foil?' (always foil)':''}</h3><table>${d.map(x=>`<tr><td><span class="rdot" style="background:${RC[x.r]};box-shadow:0 0 0 1px #fff4"></span>${sp(x)}${x.spec.r&&x.spec.src==='treat'?' · '+x.spec.r:''}${x.foil&&!s.foil?' · foil':''}</td><td class="n">${pct(x.p,x.p<.01?2:1)}</td></tr>`).join('')}</table>`;
@@ -57,7 +57,7 @@ function renderOdds(){
     <tr><td>Avg foils per pack</td><td class="n">${e.foil.toFixed(2)}</td><td></td></tr>
     <tr><td>At least one <i>specific</i> regular mythic printing<br><small class="dim">Includes foil copies; excludes special prints and pity</small></td><td class="n">${pct(specificM,2)}</td><td class="n">${(1/specificM).toFixed(0)} packs</td></tr>
     </table>
-    <p class="note">Card counts: ${base.filter(c=>c.r==='C').length} commons, ${base.filter(c=>c.r==='U').length} uncommons, ${base.filter(c=>c.r==='R').length} rares, ${base.filter(c=>c.r==='M').length} mythics in TLA; ${ETERN.length} Eternal reprints.</p>`;
+    <p class="note">Card counts: ${base.filter(c=>c.r==='C').length} commons, ${base.filter(c=>c.r==='U').length} uncommons, ${base.filter(c=>c.r==='R').length} rares, ${base.filter(c=>c.r==='M').length} mythics in ${esc(code)}; ${pkgEternal(code).length} Eternal reprints.</p>`;
   document.getElementById('gachaRules').innerHTML=`<ul style="margin:0;padding-left:18px">
     <li>One pack costs <b>${$$(cost(1))}</b>; a 30-pack box costs ${$$(cost(30))}.</li>
     <li>Selling pays <b>${S.settings.buy}%</b> of market price, like a store buylist. "Sell extras" keeps ${S.settings.keep} of each card.</li>

@@ -13,7 +13,7 @@ function pips(cost){
 }
 const RC={C:'#1b1b1b',U:'#b8c7d3',R:'#e8c25a',M:'#f07a3a',L:'#1b1b1b'};
 const esc=s=>String(s??'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
-function treatInfo(c){ return Object.values(TREAT_INFO).find(t=>t.id===c.treat); }
+function treatInfo(c){ return c.treat?SHEET_BY_ID[c.treat]:undefined; }
 function cardHTML(c,foil,face,size,eager){
   face=face||'front';
   const f=face==='back'&&c.back ? Object.assign({},c,{name:c.back.name,type:c.back.type,pt:c.back.pt,kw:c.back.kw,cost:'',flavor:null}) : c;

@@ -158,7 +158,7 @@ const seededPacks = (page, seed, n, code) => page.evaluate(({ seed, n, code }) =
     await group('binder per set', async () => {
       const { page, ctx } = await fresh();
       await page.evaluate(() => showView('collection'));
-      assert.deepEqual(await page.locator('#fSet option').evaluateAll((o) => o.map((x) => x.value)), ['TLA', 'TLE', 'SPEC:TLA', 'TST', 'SPEC:TST']);
+      assert.deepEqual(await page.locator('#fSet option').evaluateAll((o) => o.map((x) => x.value)), ['TLA', 'TLE', 'SPEC:TLA', 'TST', 'TSE', 'SPEC:TST']);
       await page.locator('#fSet').selectOption('TST');
       await page.waitForFunction(() => document.querySelectorAll('#colGrid .card[data-k^="TST:"]').length === 9);
       assert.match(await page.locator('#colSummary').innerText(), /\/9\b/);
@@ -178,6 +178,42 @@ const seededPacks = (page, seed, n, code) => page.evaluate(({ seed, n, code }) =
       await page.evaluate(() => showView('decks'));
       assert.equal(await page.locator('#deckSet').isVisible(), false);
       assert.equal(await page.locator('#archGrid > *').count(), 10);
+      await ctx.close();
+    });
+
+    await group('a second set\'s special and Eternal printings show their own versions', async () => {
+      const { page, ctx } = await fresh();
+      const spot = await page.evaluate(() => { spotlight({ c: findCard('TST:20'), foil: false, v: 1 }, false); return document.getElementById('spot').innerText; });
+      assert.match(spot, /Showcase/);
+      await page.evaluate(() => { spot.click(); openZoom(findCard('TST:20'), false); });
+      assert.match(await page.locator('#mbody').innerText(), /Version\s*Showcase/);
+      assert.match(await page.locator('#mbody a[href*="scryfall.com/search"]').getAttribute('href'), /set%3Atst/);
+      await page.evaluate(() => openZoom(findCard('TSE:1'), false));
+      assert.match(await page.locator('#mbody').innerText(), /Version\s*Eternal \(TSE\)/);
+      await ctx.close();
+    });
+
+    await group('reveal captions use the set\'s own slot labels', async () => {
+      const { page, ctx } = await fresh();
+      await page.locator('[data-pick-set="TST"]').click();
+      await page.locator('#open1').click();
+      await opened(page);
+      await page.evaluate(() => ST.cards.forEach((p, i) => flipCard(i, true)));
+      const stage = await page.locator('#stBody').innerText();
+      assert.match(stage, /Foil/); assert.doesNotMatch(stage, /Foil wildcard/);
+      await page.evaluate(() => stageClose());
+      assert.doesNotMatch(await page.locator('#v-open').innerText(), /Foil wildcard/);
+      await ctx.close();
+    });
+
+    await group('odds and pull history name the set they show', async () => {
+      const { page, ctx } = await fresh();
+      await page.evaluate(() => showView('odds'));
+      await page.locator('#oddsSet').selectOption('TST');
+      const odds = await page.locator('#oddsTable').innerText();
+      assert.match(odds, /mythics in TST/); assert.doesNotMatch(odds, /in TLA/);
+      await page.evaluate(() => { S.packs = 1; S.hist.push(['TSE:1@foil']); showView('stats'); renderStats(); });
+      assert.match(await page.locator('#histList').innerText(), /Fixture Relic[\s\S]*Eternal/);
       await ctx.close();
     });
 

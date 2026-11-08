@@ -35,7 +35,7 @@ function renderStats(){
   } else document.getElementById('valChart').innerHTML='<p class="note">Open a couple of packs to see the chart.</p>';
   const top=[]; for(const k in S.coll){ const c=findCard(k); if(c) top.push({c,foil:false,v:priceOf(c,false),n:S.coll[k]}); } for(const k in S.foil){ const c=findCard(k); if(c) top.push({c,foil:true,v:priceOf(c,true),n:S.foil[k]}); }
   top.sort((a,b)=>b.v-a.v);
-  document.getElementById('topVal').innerHTML=top.length?`<table><tr><th>Card</th><th class="n">Qty</th><th class="n">Each</th></tr>${top.slice(0,12).map(x=>`<tr style="cursor:pointer" data-k="${cardKey(x.c)}" data-f="${x.foil?1:0}"><td><span class="rdot" style="background:${RC[x.c.r]}"></span>${esc(x.c.flavor||x.c.name)}${x.foil?' ★':''} <span class="dim">${x.c.treat&&treatInfo(x.c)?treatInfo(x.c).label:x.c.set==='TLE'?'Eternal':''}</span></td><td class="n">${x.n}</td><td class="n">${ptag(x.v)}</td></tr>`).join('')}</table>`:'<p class="note">Nothing yet.</p>';
+  document.getElementById('topVal').innerHTML=top.length?`<table><tr><th>Card</th><th class="n">Qty</th><th class="n">Each</th></tr>${top.slice(0,12).map(x=>`<tr style="cursor:pointer" data-k="${cardKey(x.c)}" data-f="${x.foil?1:0}"><td><span class="rdot" style="background:${RC[x.c.r]}"></span>${esc(x.c.flavor||x.c.name)}${x.foil?' ★':''} <span class="dim">${x.c.treat&&treatInfo(x.c)?treatInfo(x.c).label:x.c.treat==='etern'?'Eternal':''}</span></td><td class="n">${x.n}</td><td class="n">${ptag(x.v)}</td></tr>`).join('')}</table>`:'<p class="note">Nothing yet.</p>';
   document.querySelectorAll('#topVal tr[data-k]').forEach(r=>r.onclick=()=>openZoom(findCard(r.dataset.k),r.dataset.f==='1'));
   const rows=[['Commons','C'],['Uncommons','U'],['Rares','R'],['Mythics','M'],['Basic lands','L'],['Specials','special'],['Eternal','eternal'],['Foils','foil']];
   const obs={...S.rc,special:S.special,eternal:S.eternal,foil:S.foils};
@@ -49,16 +49,16 @@ function renderStats(){
   const idx={}; ALL_BASE.concat(allEternal(),allSpecials()).forEach(c=>idx[cardKey(c)]=c);
   const recent=[]; for(let i=S.hist.length-1;i>=0&&recent.length<80;i--){
     const packNo=S.packs-(S.hist.length-1-i);
-    S.hist[i].forEach(ent=>{const [kk,slot]=ent.split('@'); const foil=kk.endsWith('*'); const c=idx[kk.replace('*','')]; if(c&&(c.r==='R'||c.r==='M'||isSpecial(c)||c.set==='TLE')) recent.push({packNo,c,foil});});
+    S.hist[i].forEach(ent=>{const [kk,slot]=ent.split('@'); const foil=kk.endsWith('*'); const c=idx[kk.replace('*','')]; if(c&&(c.r==='R'||c.r==='M'||isSpecial(c)||c.treat==='etern')) recent.push({packNo,c,foil});});
   }
-  document.getElementById('histList').innerHTML=recent.length?`<table><tr><th>Pack</th><th>Card</th><th>Version</th></tr>${recent.map(r=>`<tr><td class="dim">#${r.packNo}</td><td><span class="rdot" style="background:${RC[r.c.r]}"></span>${esc(r.c.flavor||r.c.name)}</td><td class="muted">${r.c.set==='TLE'?'Eternal':isSpecial(r.c)?(Object.values(TREAT_INFO).find(t=>t.id===r.c.treat)||{}).label:'Regular'}${r.foil?' ★ foil':''}</td></tr>`).join('')}</table>`:'<p class="muted">Open some packs first.</p>';
+  document.getElementById('histList').innerHTML=recent.length?`<table><tr><th>Pack</th><th>Card</th><th>Version</th></tr>${recent.map(r=>`<tr><td class="dim">#${r.packNo}</td><td><span class="rdot" style="background:${RC[r.c.r]}"></span>${esc(r.c.flavor||r.c.name)}</td><td class="muted">${r.c.treat==='etern'?'Eternal':isSpecial(r.c)?(treatInfo(r.c)||{}).label:'Regular'}${r.foil?' ★ foil':''}</td></tr>`).join('')}</table>`:'<p class="muted">Open some packs first.</p>';
 }
 document.getElementById('copyCsv').onclick=async()=>{
   const idx={}; ALL_BASE.concat(allEternal(),allSpecials()).forEach(c=>idx[cardKey(c)]=c);
   const first=S.packs-S.hist.length+1;
   let csv='pack,slot,set,number,name,rarity,version,foil\n';
   S.hist.forEach((pk,i)=>pk.forEach(ent=>{const [kk,slot]=ent.split('@'); const foil=kk.endsWith('*'); const c=idx[kk.replace('*','')]; if(!c) return;
-    const ver=c.set==='TLE'?'Eternal':(Object.values(TREAT_INFO).find(t=>t.id===c.treat)||{label:'Regular'}).label;
+    const ver=c.treat==='etern'?'Eternal':(treatInfo(c)||{label:'Regular'}).label;
     csv+=`${first+i},${slot},${c.set},${c.num},"${(c.flavor||c.name).replace(/"/g,'""')}",${c.r},${ver},${foil?1:0}\n`;}));
   try{ await navigator.clipboard.writeText(csv); toast(`Copied ${S.hist.length} packs as CSV`); }
   catch(e){ document.getElementById('mbody').innerHTML=`<h2>Pull log CSV</h2><p class="muted">Clipboard is blocked here. Select all and copy:</p><textarea style="width:100%;height:50vh;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:8px;font:12px monospace">${esc(csv)}</textarea>`; document.getElementById('modal').classList.add('on'); }

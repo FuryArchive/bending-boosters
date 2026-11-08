@@ -7,6 +7,8 @@ const pkgOf=code=>PKG[code]||null;
 const pkgBase=code=>PKG[code]?PKG[code].cards.base:[];
 const pkgEternal=code=>PKG[code]?(PKG[code].cards.eternal||[]).map(c=>Object.assign({},c,{treat:'etern'})):[];
 const ALL_BASE=SET_PACKAGES.flatMap(p=>p.cards.base);
+// Special-version sheets of every set, by the id stored on each printing (c.treat).
+const SHEET_BY_ID={}; SET_PACKAGES.forEach(p=>Object.values(p.sheets||{}).forEach(t=>{ SHEET_BY_ID[t.id]=t; }));
 // The set the pack shop opens (free packs too): the player's pick, or the first set if it's gone.
 function packSet(){ const c=S.settings.packSet; return PKG[c]?c:MAIN_SET; }
 const cardsPerPack=code=>PKG[code].products.play.slots.reduce((n,s)=>n+s.n,0);

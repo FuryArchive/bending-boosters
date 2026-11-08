@@ -10,6 +10,10 @@
     {"set":"TST","num":"8","r":"R","name":"Fixture Shade","artist":"Fixture","cost":"2 B","type":"Creature Shade","pt":"2/2","kw":[],"col":"B"},
     {"set":"TST","num":"9","r":"M","name":"Fixture Titan","artist":"Fixture","cost":"5 G","type":"Legendary Creature Giant","pt":"7/7","kw":[],"col":"G"}
   ],
-  "eternal": [],
-  "treat": {}
+  "eternal": [
+    {"set":"TSE","num":"1","r":"M","name":"Fixture Relic","artist":"Fixture","cost":"3","type":"Artifact","kw":[],"col":""}
+  ],
+  "treat": {
+    "showcase": [{"name":"Fixture Drake","num":"20","artist":"Fixture"}]
+  }
 }

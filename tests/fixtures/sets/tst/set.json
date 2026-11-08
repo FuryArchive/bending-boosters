@@ -7,7 +7,9 @@
   "symbol": "TST",
   "archetypes": [],
   "decks": [],
-  "sheets": {},
+  "sheets": {
+    "showcase": {"id":"tshow","label":"Showcase","cls":"bl"}
+  },
   "products": {
     "play": {"title":"Test Set","label":"Play Booster","note":"Fixture.","slots":[{"id":"common","n":3,"label":"Common","base":{"src":"base","r":"C"},"rep":[]},{"id":"unc","n":1,"label":"Uncommon","base":{"src":"base","r":"U"},"rep":[]},{"id":"rare","n":1,"label":"Rare / Mythic","base":{"src":"base","r":"R"},"rep":[[0.25,{"src":"base","r":"M"}]]},{"id":"foil","n":1,"label":"Foil","foil":true,"base":{"src":"base","r":"C"},"rep":[]}]}
   }

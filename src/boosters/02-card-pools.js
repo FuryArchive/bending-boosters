@@ -46,7 +46,7 @@ function rollSlot(slot,forceMythic,code=MAIN_SET){
     for(const [p,s,f] of slot.rep){ acc+=p; if(x<acc){ spec=s; if(f) foil=true; break; } }
   }
   const c=pick(pool(spec,code));
-  return {c,foil,slot:slot.id};
+  return {c,foil,slot:slot.id,code};
 }
 function cardKey(c){ return c.set+':'+c.num; }
 function isSpecial(c){ return !!c.treat && !['appa','journey','etern'].includes(c.treat); }

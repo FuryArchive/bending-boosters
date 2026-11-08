@@ -33,7 +33,7 @@ function cost(n){ return n===30 ? +S.settings.boxPrice : Math.round(S.settings.p
 function tier(p){ if(isSpecial(p.c)) return 'S'; if(p.c.treat==='etern') return 'E'; if(p.c.r==='M') return 'M'; if(p.c.r==='R') return 'R'; return ''; }
 function score(p){ return (isSpecial(p.c)?100:0)+(p.c.treat==='etern'?60:0)+({M:40,R:20,U:5,C:1,L:0}[p.c.r])+(p.foil?3:0); }
 function tile(k,v,s){ return `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`; }
-function slotLabel(id){ return (SLOTS.find(s=>s.id===id)||{}).label||''; }
+function slotLabel(id,code=MAIN_SET){ return ((PKG[code]?slotsOf(code):SLOTS).find(s=>s.id===id)||{}).label||''; }
 
 let LAST=null; // {packs, showAll}
 function tryOpen(n,free=false){
@@ -131,7 +131,7 @@ function flipHTML(p,i,down){
      <div class="inner"><div class="face back${hint}">${backSVG}</div><div class="face front">${cardHTML(p.c,p.foil,'front','normal',true)}</div></div></div>
      <div class="cap"></div></div>`;
 }
-function capFor(p){ return (ST&&ST.multi? esc(p.c.flavor||p.c.name) : slotLabel(p.slot))+' · '+ptag(p.v||priceOf(p.c,p.foil)); }
+function capFor(p){ return (ST&&ST.multi? esc(p.c.flavor||p.c.name) : slotLabel(p.slot,p.code))+' · '+ptag(p.v||priceOf(p.c,p.foil)); }
 function flipCard(i,quiet){
   if(!ST||!ST.cards[i]) return;
   const el=stBody.querySelector(`.flip[data-i="${i}"]`); if(!el||el.classList.contains('up')) return;
@@ -203,7 +203,7 @@ function spotlight(p,reveal,after){
   spot.style.setProperty('--rc',TIER_COL[t]);
   spot.classList.remove('lit','shakeit'); spot.classList.add('on');
   const ti=treatInfo(p.c);
-  const title = isSpecial(p.c)?ti.label : p.c.treat==='etern'?'Eternal' : ({M:'Mythic rare',R:'Rare',U:'Uncommon',C:'Common',L:'Land'})[p.c.r];
+  const title = isSpecial(p.c)?(ti?ti.label:'Special') : p.c.treat==='etern'?'Eternal' : ({M:'Mythic rare',R:'Rare',U:'Uncommon',C:'Common',L:'Land'})[p.c.r];
   const sub = [p.foil?'★ FOIL':'', isSpecial(p.c)?({M:'MYTHIC',R:'RARE',U:'UNCOMMON'})[p.c.r]:'', p.isNew?'NEW':''].filter(Boolean).join(' · ');
   const pv=p.v||priceOf(p.c,p.foil);
   spotHolder.innerHTML=`<div class="flip enter${reveal?'':' up'}"><div class="inner"><div class="face back">${backSVG}</div><div class="face front">${cardHTML(p.c,p.foil,'front','large',true)}</div></div></div>
@@ -256,7 +256,7 @@ function renderLast(){
   const cw = multi&&LAST.showAll?150:190;
   CUR=list;
   document.getElementById('last').innerHTML=`<div class="cards" style="--cw:${cw}px">${list.map((p,i)=>{const t=tier(p);
-    return `<div class="cardWrap ${t?(t==='M'?'hitM':t==='S'||t==='E'?'hitS':'hit'):''}" data-i="${i}" style="cursor:pointer">${p.isNew?'<span class="badge">NEW</span>':''}${cardHTML(p.c,p.foil)}<div class="cap">${multi?esc(p.c.flavor||p.c.name):slotLabel(p.slot)} · ${ptag(p.v||priceOf(p.c,p.foil))}</div></div>`;}).join('')}</div>`;
+    return `<div class="cardWrap ${t?(t==='M'?'hitM':t==='S'||t==='E'?'hitS':'hit'):''}" data-i="${i}" style="cursor:pointer">${p.isNew?'<span class="badge">NEW</span>':''}${cardHTML(p.c,p.foil)}<div class="cap">${multi?esc(p.c.flavor||p.c.name):slotLabel(p.slot,p.code)} · ${ptag(p.v||priceOf(p.c,p.foil))}</div></div>`;}).join('')}</div>`;
   document.querySelectorAll('#last .cardWrap').forEach(el=>el.onclick=()=>{const p=CUR[+el.dataset.i]; openZoom(p.c,p.foil);});
 }
 let CUR=[];
