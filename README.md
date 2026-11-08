@@ -3,7 +3,7 @@
 A browser game in one self-contained HTML file, built from the source in `src/`. It has two parts:
 
 - **Pack simulator.** Open Avatar: The Last Airbender (TLA) Magic: The Gathering play boosters with play money. It includes real printing odds, Scryfall card images and prices, a collection binder, archetype decks, stats, an odds page and settings.
-- **Journey.** A roguelike deckbuilder played with the set's cards. It has three Books (Water, Earth, Fire) of 15 floors each, a branching map with fights, shops, rests, events, treasure and bosses, Strike/Guard cards, a Flow multiplier, and Charms and Legends.
+- **Journey.** A roguelike deckbuilder played with the set's cards. A run starts from one of the ten MTG colour pairs and the sets you pick, then crosses three Books of 15 floors each: a branching map with fights, shops, rests, events, treasure and bosses, Strike/Guard cards, a Flow multiplier, and Charms and Legends. A TLA-only run uses the Avatar theme (Air Nomads, Water Tribe, Spirit, Fire Nation, Earth Kingdom; Books Water, Earth, Fire). Mixed-set runs use a neutral theme (White, Blue, Black, Red, Green; Acts I–III), which `#debug` can also pick for a TLA run.
 
 ## Where this source came from
 
@@ -48,7 +48,10 @@ src/styles/main/         main stylesheet, in cascade order (00-root … 17-decks
 src/styles/visual-edition.css   the Nov 2026 visual pass, loaded last as its own <style>
 src/boosters/            the pack simulator: one classic script split into ordered sections
 src/catalog/             data.json (cards: base/eternal/treat), decks.json, prices.json
-src/data/  src/engine/   Journey content and rules engine (pure ES modules, no DOM)
+src/data/  src/engine/   Journey content and rules engine (pure ES modules, no DOM): colours, set/mechanic/theme registries, pools, encounters, run
+src/sets/tla/            TLA in Journey: set record, its mechanics (Firebending, Earthbend, Lessons, Avatar State), the Avatar theme (enemies, events, Legends)
+src/themes/neutral/      the neutral theme (Acts I–III) for mixed-set runs
+src/content.js           registers every set, mechanic, theme and theme charm the build ships
 src/ui/                  Journey UI: journey.js (screens), cardview, fx/backdrop, sfx, anim
 src/ui/index.js          Journey entry point; its exports become the global `BBJ`
 src/economy/             economy numbers (config.js), clock, daily gift, star-protected selling (pure modules)
@@ -96,8 +99,8 @@ A mechanic is a plain object registered in `src/content.js`. Its hooks (card con
 |---|---|
 | `npm run check` | Journey module rules (unique names, imports present, no writes to imports) |
 | `npm run test:unit` | unit tests for the pure modules (`tests/unit/*.test.mjs`): daily gift, selling, save migration, save files, tips, run helpers |
-| `npm run test:quick` | build, check, combat engine (46), progression rules (36; the browser part is skipped) |
-| `npm test` | all of the above, plus the progression browser checks (47 total), `browser.test.cjs` (12 groups: packs, odds, resets, saves, recovery), `visual.test.cjs` (11 groups: layouts from 320 px to 1440 px, touch and keyboard input, all 262 Journey cards, empty charm slots) and `friends-beta.test.cjs` (13 groups: gifts with a faked clock, broke players, existing saves, selling, export/import, resume/abandon, tips) |
+| `npm run test:quick` | build, check, combat engine (46), progression rules (36; the browser part is skipped), and `legacy-parity.test.cjs`: the shipped engine (`history/3-visual-edition.html`) and this build side by side (card conversion, pools, offers, seeded runs step by step, a v2 save resumed mid-fight), plus every colour pair and a neutral run played through all three Books |
+| `npm test` | all of the above, plus the progression browser checks (47 total), `browser.test.cjs` (12 groups: packs, odds, resets, saves, recovery), `visual.test.cjs` (11 groups: layouts from 320 px to 1440 px, touch and keyboard input, all 262 Journey cards, empty charm slots) and `friends-beta.test.cjs` (14 groups: gifts with a faked clock, broke players, existing saves, selling, export/import, resume/abandon, tips) and `journey-sets.test.cjs` (7 groups: themed screens with no raw placeholders or Avatar names in neutral runs, run setup, a v2 run resumed from the old build, a pair run opened in the old build, the debug theme select) |
 | `npm run screens` | screenshots of all main screens and Journey encounters into `test-output/screens/` |
 
 The browser suites use Playwright with fresh, isolated profiles, muted audio and outside HTTPS blocked. They never touch your real saves. They use `/usr/bin/chromium` when it exists. Set `CHROMIUM_PATH=/path/to/chrome` to use another browser, or run `npx playwright install chromium` to use Playwright's own build.

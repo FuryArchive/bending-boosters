@@ -22,7 +22,8 @@ const out=process.argv[3]||path.join(env.OUTPUT,'screens');
  await page.evaluate(()=>{showView('open');tryOpen(1);ST.cards.forEach((p,i)=>flipCard(i,true));updateBottom()});await shot('08-pack-reveal',3000);
  await page.evaluate(()=>spotlight({c:findCard(S.best.k),foil:S.best.foil,v:S.best.v},false));await shot('09-spotlight');await page.evaluate(()=>spot.click());await page.evaluate(()=>stageClose());
  await page.evaluate(()=>showView('journey'));await shot('10-journey-start',3000);
- await page.locator('[data-st="water"]').click();await page.locator('#jxStart').click();await shot('11-charms',3000);
+ await page.locator('[data-pair="UR"]').click();await shot('10b-journey-setup',1500);
+ await page.locator('#jxStart').click();await shot('11-charms',3000);
  await page.evaluate(()=>BBJ._newRun('VISUAL-PASS','water'));await shot('12-map',3000);
  for(const [i,n]of ['fight','shop','rest','event','treasure'].entries()){
   await page.evaluate(n=>BBJ._debugGoto(n),n);await shot(String(i+13).padStart(2,'0')+'-'+n,3000);
@@ -39,6 +40,12 @@ const out=process.argv[3]||path.join(env.OUTPUT,'screens');
  await page.screenshot({path:path.join(out,'23-mobile-fight-full.png'),fullPage:true,animations:'disabled'});
  await page.evaluate(()=>{BBJ._newRun('VISUAL-PASS','water');window.scrollTo(0,0)});await shot('24-mobile-map',3000);
  await page.evaluate(()=>{showView('settings');window.scrollTo(0,0)});await shot('25-mobile-settings');
+ {const c2=await browser.newContext({viewport:{width:390,height:844}}),p2=await c2.newPage();p2.on('pageerror',e=>errors.push(e.stack));
+  await p2.goto(pathToFileURL(source).href+'#journey');await p2.evaluate(()=>{S.settings.sound=false});await p2.locator('[data-pair="WB"]').click();
+  await p2.waitForTimeout(800);await p2.screenshot({path:path.join(out,'26-mobile-journey-setup.png'),fullPage:true,animations:'disabled'});console.log('26-mobile-journey-setup');
+  console.log('PHONE-OVERFLOW',await p2.evaluate(()=>document.documentElement.scrollWidth-innerWidth));await c2.close();}
+ await page.setViewportSize({width:1440,height:1000});
+ await page.evaluate(()=>{showView('journey');BBJ._newRun('VISUAL-NEUTRAL',{colours:['W','B'],theme:'neutral'});window.scrollTo(0,0)});await shot('27-neutral-map',3000);
  console.log('INDEX',await page.evaluate(()=>({state:imgIndexState,images:Object.keys(IMG).length})));
  fs.writeFileSync(path.join(out,'errors.json'),JSON.stringify(errors,null,2));
  await browser.close();

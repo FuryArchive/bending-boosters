@@ -110,6 +110,81 @@ const AVATAR_WORDS = /Avatar|Book|Water Tribe|Fire Nation|Earth Kingdom|Air Noma
       await ctx.close();
     });
 
+    const bbRun = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('bb.run')));
+    async function pickCharm(page) {
+      await page.locator('[data-ci]').first().click();
+      await page.waitForFunction(() => BBJ._state.screen === 'map' && !BBJ._state.busy);
+    }
+
+    await group('fresh player picks a pair', async () => {
+      const { page, ctx } = await fresh({ debug: false });
+      await page.evaluate(() => showView('journey'));
+      const text = await page.locator('#journeyRoot').innerText();
+      assert.match(text, /Cards from Avatar: The Last Airbender/);
+      assert.equal(await page.locator('[data-set]').count(), 0);
+      assert.equal(await page.locator('[data-pair]').count(), 10);
+      assert.equal(await page.locator('#jxStart').isDisabled(), true);
+      await page.locator('[data-pair="UR"]').click();
+      assert.match(await page.locator('#jxStart').innerText(), /Water Tribe & Fire Nation/);
+      await page.locator('#jxStart').click();
+      await pickCharm(page);
+      const r = await bbRun(page);
+      assert.deepEqual([r.v, r.colours, r.sets, r.theme, 'nation' in r, r.deck.length], [3, ['U', 'R'], ['TLA'], 'avatar', false, 12]);
+      await ctx.close();
+    });
+
+    await group('v2 save resumes and is backed up', async () => {
+      const { page, ctx } = await fresh({ url: OLD_URL });
+      await page.evaluate(() => { showView('journey'); BBJ._newRun('OLD-FIRE', 'fire'); BBJ._debugGoto('fight'); });
+      await page.waitForFunction(() => BBJ._state.screen === 'fight' && !BBJ._state.busy);
+      const strike = page.locator('.jx-hcard:not(.cant) [data-mode="strike"]').first();
+      await strike.locator('xpath=ancestor::*[contains(@class,"jx-hcard")]').hover();
+      await strike.click();
+      await page.waitForFunction(() => BBJ._debugFight().chain === 1 && !BBJ._state.busy);
+      const raw = await page.evaluate(() => localStorage.getItem('bb.run'));
+      assert.equal(JSON.parse(raw).v, 2);
+      await page.goto(GAME_URL + '#debug');
+      await page.evaluate(() => { S.settings.sound = false; showView('journey'); });
+      assert.match(await page.locator('.jx-resume').innerText(), /Fire Nation/);
+      await page.locator('#jxResume').click();
+      await page.waitForFunction(() => BBJ._state.screen === 'fight' && !BBJ._state.busy);
+      assert.deepEqual(await page.evaluate(() => BBJ._state.run.fight.hand.map((c) => c.uid)), JSON.parse(raw).fight.hand.map((c) => c.uid));
+      assert.equal(await page.evaluate(() => localStorage.getItem('bb.backup.run-v2')), raw);
+      await page.locator('#jxEnd').click();
+      await page.waitForFunction(() => BBJ._debugFight() && BBJ._debugFight().turn === 2 && !BBJ._state.busy);
+      const r = await bbRun(page);
+      assert.deepEqual([r.v, r.colours, r.nation], [3, ['R'], 'fire']);
+      await ctx.close();
+    });
+
+    await group('old build opens a pair run', async () => {
+      const { page, ctx } = await fresh();
+      await page.evaluate(() => { showView('journey'); BBJ._newRun('PAIR-OLD', { colours: ['U', 'R'] }); BBJ._debugGoto('fight'); });
+      await page.waitForFunction(() => BBJ._state.screen === 'fight' && !BBJ._state.busy);
+      await page.goto(OLD_URL + '#debug');
+      await page.evaluate(() => { S.settings.sound = false; showView('journey'); });
+      assert.match(await page.locator('#journeyRoot').innerText(), /Run in progress/);
+      await page.locator('#jxResume').click();
+      await page.waitForFunction(() => BBJ._state.screen === 'fight' && !BBJ._state.busy);
+      await page.goto(GAME_URL + '#debug');
+      const r = await bbRun(page);
+      assert.deepEqual([r.colours, r.theme], [['U', 'R'], 'avatar']);
+      await ctx.close();
+    });
+
+    await group('debug theme select', async () => {
+      const { page, ctx } = await fresh();
+      await page.evaluate(() => showView('journey'));
+      await page.locator('#jxTheme').selectOption('neutral');
+      await page.locator('[data-pair="WB"]').click();
+      assert.match(await page.locator('#jxStart').innerText(), /White & Black/);
+      await page.locator('#jxStart').click();
+      await pickCharm(page);
+      assert.match(await page.locator('.jx-hudbook').innerText(), /Act I\b/);
+      assert.equal((await bbRun(page)).theme, 'neutral');
+      await ctx.close();
+    });
+
     assert.deepEqual(errors, []);
     console.log(`ALL JOURNEY-SETS CHECKS PASSED (${groups} groups; no page errors)`);
   } finally {

@@ -22,6 +22,9 @@ function mountJourneyOnce(){
   if(JOURNEY||!window.BBJ) return;
   JOURNEY=BBJ.mountJourney(document.getElementById('journeyRoot'),{cardHTML,BASE,S,esc,save,toast,owned,debug:BB_DEBUG,artSVG,
     settleRun:settleJourney,
+    ownership:sets=>BBJ.journeyOwnership({cards:BASE,printings:BASE.concat(specList(),ETERN),copiesOf:c=>(S.coll[cardKey(c)]||0)+(S.foil[cardKey(c)]||0),sets}),
+    ownedSets:()=>[...new Set(Object.keys(S.coll).concat(Object.keys(S.foil)).filter(k=>(S.coll[k]||0)+(S.foil[k]||0)>0).map(k=>k.split(':')[0]))],
+    pairNames:Object.fromEntries(DECKS.arch.map(a=>[BBJ.PAIRS.find(p=>[...p].sort().join('')===[...a.id].sort().join('')),a.name])),
     artCrop:c=>{ if(!S.settings.real) return null; const e=IMG[c.set+':'+c.num]; return e?'https://cards.scryfall.io/art_crop/front/'+e[0]:null; },
     starsOf:j=>j.cardName?starsFromCount(owned(j.cardName)):1});
   BBJ._state=JOURNEY._state; BBJ._debugForce=JOURNEY._debugForce; BBJ._newRun=JOURNEY._newRun; BBJ._debugGoto=JOURNEY._debugGoto; BBJ._debugFight=JOURNEY._debugFight;

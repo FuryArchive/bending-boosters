@@ -24,7 +24,8 @@
     ],
     "visual-edition": [
       "src/styles/visual-edition.css",
-      "src/styles/friends-beta.css"
+      "src/styles/friends-beta.css",
+      "src/styles/journey-sets.css"
     ],
     "boosters": [
       "src/boosters/00-prelude.js",

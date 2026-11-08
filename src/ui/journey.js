@@ -1,14 +1,15 @@
-import { DECK_TYPES, starsFromCopies, strikeValue, toRunCard } from "../engine/cards.js";
+import { DECK_TYPES, strikeValue, toRunCard } from "../engine/cards.js";
 import { hexText, intentHit, pendingCopyBonus } from "../engine/enemy.js";
 import { canPlayCard, incomingDamage, modesFor, previewCard } from "../engine/flow.js";
-import { cardByKey, isRunCard, keyOf, setCatalog } from "../engine/catalog.js";
+import { cardByKey, isRunCard, setCatalog } from "../engine/catalog.js";
 import { createRng } from "../engine/rng.js";
 import { generateBook, nodeById } from "../engine/map.js";
-import { NATIONS, runColours } from "../engine/pools.js";
-import { COLOUR_ELEMENT } from "../engine/colours.js";
+import { runColours, runSets } from "../engine/pools.js";
+import { COLOUR_ELEMENT, PAIRS } from "../engine/colours.js";
 import { mechanicsFor } from "../engine/mechanics.js";
-import { journeySets, themeForSets } from "../engine/sets.js";
-import { themeById, themeOf, themeText } from "../engine/themes.js";
+import { journeySets, setByCode, themeForSets } from "../engine/sets.js";
+import { setupSets } from "../engine/ownership.js";
+import { themeById, themeIds, themeOf, themeText } from "../engine/themes.js";
 import { jokerById, jokerProgress } from "../data/jokers.js";
 import { itemById } from "../data/items.js";
 import { eventById } from "../engine/event-kit.js";
@@ -94,9 +95,10 @@ export function mountJourney(root, legacy) {
   L.BASE.forEach((c) => {
     byKey[c.set + ":" + c.num] = c;
   });
-  const st = { screen: "start", nation: null, run: null, f: null, focus: null, busy: false, speed: S.settings.jspeed || 1, introSeen: null };
+  const st = { screen: "start", setup: null, run: null, f: null, focus: null, busy: false, speed: S.settings.jspeed || 1, introSeen: null };
   // Everything the player reads comes from the run's theme (before a run: the theme a new run gets).
-  const startTheme = () => themeById(themeForSets(journeySets().map((x) => x.code)));
+  const journeyCodes = () => journeySets().map((x) => x.code);
+  const startTheme = () => themeById(st.setup && st.setup.theme || themeForSets(st.setup ? st.setup.sets : journeyCodes()));
   const T = () => st.run ? themeOf(st.run) : startTheme();
   const tt = (text) => themeText(T(), text);
   const elHex = (e) => (T().colours[e] || T().colours.Neutral).hex;
@@ -130,17 +132,16 @@ export function mountJourney(root, legacy) {
     st.px = ev.clientX;
     st.py = ev.clientY;
   }, true);
-  const ownedKeys = () => L.BASE.filter((c) => isRunCard(c) && (L.owned ? L.owned(c.name) > 0 : false)).map(keyOf);
-  const ownedStars = () => {
-    const o = {};
-    if (L.owned) {
-      for (const c of L.BASE) if (isRunCard(c)) {
-        const s = starsFromCopies(L.owned(c.name));
-        if (s >= 2) o[keyOf(c)] = s;
-      }
+  const ownership = (sets) => L.ownership ? L.ownership(sets) : { ownedKeys: [], ownedStars: {} };
+  const colourNames = (run) => runColours(run).map((c) => themeOf(run).colours[COLOUR_ELEMENT[c]].name).join(" & ");
+  // Run setup: sets (only when there are 2+ to choose from), then a colour pair, then a start charm.
+  function setup() {
+    if (!st.setup) {
+      const su = setupSets({ journey: journeyCodes(), owned: L.ownedSets ? L.ownedSets() : [] });
+      st.setup = { choices: su.choices, showStep: su.showStep, sets: su.selected, pair: null, theme: null };
     }
-    return o;
-  };
+    return st.setup;
+  }
   function persist() {
     if (!st.run) return false;
     if (!st.run.id) st.run.id = window.crypto?.randomUUID?.() || `run-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -252,14 +253,13 @@ export function mountJourney(root, legacy) {
     const saved = loadSave();
     if (saved && (saved.status === "lost" || saved.status === "won")) {
       st.run = saved;
-      st.nation = saved.nation;
       renderSummary();
       return;
     }
     root.innerHTML = `<div class="jx-start">
     <div class="jx-hero">
       <div class="jx-herotext"><h2>The Journey</h2>
-        <p class="jx-lede">${tt("Three {books}, fifteen floors each. Start with a small deck from your nation, add cards on the way, and beat each {book}'s boss.")}</p>
+        <p class="jx-lede">${tt("Three {books}, fifteen floors each. Start with a small deck in your two colours, add cards on the way, and beat each {book}'s boss.")}</p>
         <ul class="jx-how">
           <li><b>Play cards one at a time.</b> Creatures can Strike or Guard. Spells do what they say.</li>
           <li><b>Build Flow.</b> Each card resolves at the current Flow, then raises it. ${tt("Matching {element}s")} and rising ranks raise it faster, so save your best card for last.</li>
@@ -267,18 +267,29 @@ export function mountJourney(root, legacy) {
         </ul></div>
       <ol class="jx-route">${[1, 2, 3].map((b) => `<li style="--bc:${elHex(bookOf(b).el)}">${glyph(bookOf(b).el, 30)}<div><b>${bookOf(b).kicker}: ${bookOf(b).title}</b><span>${L.esc(bookOf(b).places)}</span><span class="dim">Boss: ${L.esc(bookOf(b).bossName)}</span></div></li>`).join("")}</ol>
     </div>
-    ${saved && (saved.status === "map" || saved.status === "node" || saved.status === "fight") ? `<div class="jx-resume" style="--bc:${elHex(themeOf(saved).books[saved.book].el)}">${glyph(themeOf(saved).books[saved.book].el, 34)}<div class="grow"><b>Run in progress</b><div class="note">${themeOf(saved).books[saved.book].kicker}, floor ${saved.floor} of 15. ${saved.hp}/${saved.maxHp} HP, ${saved.gold} gold, ${saved.deck.length} cards.</div></div><button class="btn primary jx-big" id="jxResume">Resume run</button><button class="btn" id="jxAbandon">Abandon run</button></div>` : ""}
-    <h3 class="jx-h">Choose a nation</h3>
-    <div class="jx-starters">${NATIONS.map((n) => `<button class="jx-starter${st.nation === n.id ? " on" : ""}" data-st="${n.id}" style="--ec:${elHex(n.element)}">${glyph(n.element, 44)}<b>${n.name}</b><span>4 Strikes, 4 Defends and 2 ${n.element} cards</span><span class="dim">${DECK_TYPES[n.element].map((t) => tagName(t, T())).join(" \xB7 ")}</span></button>`).join("")}</div>
-    <div class="row jx-startrow"><button class="btn primary jx-big" id="jxStart" ${st.nation ? "" : "disabled"}>${st.nation ? "Begin with the " + NATIONS.find((n) => n.id === st.nation).name : "Pick a nation to begin"}</button><span class="note">Commons are always offered. Uncommons and better appear once you own them: ${ownedKeys().length} of ${L.BASE.filter(isRunCard).length} so far.</span></div>
+    ${saved && (saved.status === "map" || saved.status === "node" || saved.status === "fight") ? `<div class="jx-resume" style="--bc:${elHex(themeOf(saved).books[saved.book].el)}">${glyph(themeOf(saved).books[saved.book].el, 34)}<div class="grow"><b>Run in progress</b><div class="note">${L.esc(colourNames(saved))} \xB7 ${themeOf(saved).books[saved.book].kicker}, floor ${saved.floor} of 15. ${saved.hp}/${saved.maxHp} HP, ${saved.gold} gold, ${saved.deck.length} cards.</div></div><button class="btn primary jx-big" id="jxResume">Resume run</button><button class="btn" id="jxAbandon">Abandon run</button></div>` : ""}
+    ${setupHTML()}
   </div>`;
-    root.querySelectorAll("[data-st]").forEach((b) => b.onclick = () => {
-      st.nation = b.dataset.st;
+    const su = setup();
+    root.querySelectorAll("[data-set]").forEach((b) => b.onclick = () => {
+      const code = b.dataset.set;
+      if (code === "*") su.sets = su.choices.slice();
+      else if (!su.sets.includes(code)) su.sets = su.choices.filter((c) => c === code || su.sets.includes(c));
+      else if (su.sets.length > 1) su.sets = su.sets.filter((c) => c !== code);
       sfx.select();
       renderStart();
     });
+    root.querySelectorAll("[data-pair]").forEach((b) => b.onclick = () => {
+      su.pair = b.dataset.pair;
+      sfx.select();
+      renderStart();
+    });
+    if ($("#jxTheme")) $("#jxTheme").onchange = (ev) => {
+      su.theme = ev.target.value || null;
+      renderStart();
+    };
     $("#jxStart").onclick = () => {
-      if (st.nation) startRun();
+      if (su.pair) startRun();
     };
     if ($("#jxResume")) {
       $("#jxResume").onclick = () => resumeSaved(saved);
@@ -299,14 +310,27 @@ export function mountJourney(root, legacy) {
         }
         abandonArmed = false;
         st.run = abandonRun(saved);
-        st.nation = saved.nation;
-        renderSummary();
+          renderSummary();
       };
     }
   }
+  function setupHTML() {
+    const su = setup(), t = T(), pool = L.BASE.filter((c) => isRunCard(c) && su.sets.includes(c.set)).length;
+    const arch = su.sets.length === 1 && su.sets[0] === "TLA" && L.pairNames || {};
+    const pairName = (p) => p.split("").map((c) => t.colours[COLOUR_ELEMENT[c]].name).join(" &amp; ");
+    const sets = su.showStep ? `<h3 class="jx-h">Choose your cards</h3><div class="row jx-setchips">${su.choices.map((code) => `<button class="chip${su.sets.includes(code) ? " on" : ""}" data-set="${code}">${L.esc(setByCode(code).name)}</button>`).join("")}<button class="chip${su.sets.length === su.choices.length ? " on" : ""}" data-set="*">All my sets</button></div>` : `<p class="note jx-setline">Cards from ${L.esc(setByCode(su.sets[0]).name)}</p>`;
+    const pairs = PAIRS.map((p) => {
+      const [a, b] = p.split("").map((c) => COLOUR_ELEMENT[c]);
+      return `<button class="jx-starter jx-pair${su.pair === p ? " on" : ""}" data-pair="${p}" style="--ec:${elHex(a)};--eb:${elHex(b)}"><span class="jx-pairglyphs">${glyph(a, 34)}${glyph(b, 34)}</span><b>${L.esc(t.colours[a].name)} &amp; ${L.esc(t.colours[b].name)}</b>${arch[p] ? `<span>${L.esc(arch[p])}</span>` : ""}<span class="dim">${[...DECK_TYPES[a], ...DECK_TYPES[b]].map((x) => tagName(x, t)).join(" \xB7 ")}</span></button>`;
+    }).join("");
+    const theme = DEBUG ? `<label class="note jx-themesel">Theme <select id="jxTheme"><option value="">Set theme</option>${themeIds().map((id) => `<option value="${id}"${su.theme === id ? " selected" : ""}>${L.esc(themeById(id).name)}</option>`).join("")}</select></label>` : "";
+    return `${sets}
+    <h3 class="jx-h">Choose two colours</h3>
+    <div class="jx-starters jx-pairs">${pairs}</div>
+    <div class="row jx-startrow"><button class="btn primary jx-big" id="jxStart" ${su.pair ? "" : "disabled"}>${su.pair ? "Begin: " + pairName(su.pair) : "Pick two colours to begin"}</button>${theme}<span class="note">You start with 4 Strikes, 4 Defends and 2 commons of each colour. Commons are always offered. Uncommons and better appear once you own them: ${ownership(su.sets).ownedKeys.length} of ${pool} so far.</span></div>`;
+  }
   function resumeSaved(saved) {
     st.run = saved;
-    st.nation = saved.nation;
     st.bookShown = null;
     st.lastGold = st.lastHp = null;
     go();
@@ -314,8 +338,9 @@ export function mountJourney(root, legacy) {
   function startRun(seed) {
     seed = seed || (S.settings.jseedNext || Math.random().toString(36).slice(2, 8).toUpperCase());
     S.settings.jseedNext = null;
-    st.run = createRun({ seed, ...st.newRunOpts || { nation: st.nation }, ownedKeys: ownedKeys(), ownedStars: ownedStars() });
+    const su = setup(), o = st.newRunOpts || { colours: su.pair.split(""), sets: su.sets, theme: su.theme || void 0 };
     st.newRunOpts = null;
+    st.run = createRun({ seed, ...o, ...ownership(o.sets || runSets({})) });
     st.introSeen = null;
     st.bookShown = null;
     st.lastGold = st.lastHp = null;
@@ -772,7 +797,7 @@ export function mountJourney(root, legacy) {
     const fl = (r.book - 1) * 15 + r.floor;
     root.innerHTML = `<div class="jx-between jx-summary ${won2 ? "won" : "lost"}">
     <h2>${won2 ? L.esc(T().text.victory) : r.abandoned ? "Run abandoned" : "Your journey ends here"}</h2>
-    <p class="note">${won2 ? tt("All three {books} cleared.") : `Defeated in ${bookOf(r.book).kicker}, floor ${r.floor}.`} Seed ${L.esc(r.seed)}.</p>
+    <p class="note">${won2 ? tt("All three {books} cleared.") : `Defeated in ${bookOf(r.book).kicker}, floor ${r.floor}.`} Seed ${L.esc(r.seed)} \xB7 ${L.esc(colourNames(r))}.</p>
     <div class="jx-payout"><span>${settled ? 'Paid to your wallet' : 'Payout pending — browser storage could not save it'}</span><b id="jxPayout">+$${pay.toFixed(2)}</b></div>
     ${settled ? '' : '<p class="note">Your run has not been cleared. Free browser storage, then retry before starting another run.</p><button class="btn primary" id="jxRetryPayout">Retry payout</button>'}
     <div class="jx-runbar" title="How far you got: ${fl} of 45 floors">${[1, 2, 3].map((b) => `<span class="seg b${b}" style="--bc:${elHex(bookOf(b).el)}"><i style="width:${Math.max(0, Math.min(15, fl - (b - 1) * 15)) / 15 * 100}%"></i></span>`).join("")}</div>
@@ -1577,7 +1602,7 @@ export function mountJourney(root, legacy) {
   const api = {
     reset() {
       // Invalidates outstanding async work by replacing its run identity.
-      st.run = null; st.f = null; st.nation = null; st.focus = null;
+      st.run = null; st.f = null; st.setup = null; st.focus = null;
       st.busy = false; st.dragged = false; st.handUids = new Set();
       st.bookShown = st.cardDue = st.introSeen = st.lastGold = st.lastHp = null;
       st.speed = S.settings.jspeed || 1;
@@ -1595,8 +1620,7 @@ export function mountJourney(root, legacy) {
     _newRun(seed, opt) {
       if (!DEBUG) return false;
       // A string is a legacy nation id; an object is { colours, sets, theme }.
-      st.nation = opt && typeof opt === "object" ? null : opt || "water";
-      st.newRunOpts = opt && typeof opt === "object" ? opt : null;
+      st.newRunOpts = opt && typeof opt === "object" ? opt : { nation: opt || "water" };
       startRun(seed);
       if (st.run.pending && st.run.pending.kind === "start") {
         takeStartCharm(st.run, 0);
