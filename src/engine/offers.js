@@ -1,5 +1,5 @@
 import { cardByName, keyOf } from "./catalog.js";
-import { nationPool, spiritPool } from "./pools.js";
+import { colourPool, offColourPool, runColours, runSets } from "./pools.js";
 import { JOKERS, TIERS } from "../data/jokers.js";
 
 var JOKER_ODDS = { 1: [60, 30, 9, 1], 2: [40, 35, 20, 5], 3: [25, 35, 28, 12] };
@@ -58,8 +58,9 @@ var OFF_ELEMENT = 0.1;
 export function cardOffers(run, n, rng) {
   const owned = new Set(run.ownedKeys || []), stars = run.ownedStars || {};
   const allowed = (c) => c.r === "C" || owned.has(keyOf(c));
-  const home = nationPool(run.nation || "water").filter(allowed), homeKeys = new Set(home.map(keyOf));
-  const away = spiritPool().filter((c) => allowed(c) && !homeKeys.has(keyOf(c)));
+  const cols = runColours(run), sets = runSets(run);
+  const home = colourPool(cols, sets).filter(allowed), homeKeys = new Set(home.map(keyOf));
+  const away = offColourPool(cols, sets).filter((c) => allowed(c) && !homeKeys.has(keyOf(c)));
   const w = (c) => 1 + 0.25 * (Math.max(1, stars[keyOf(c)] || 1) - 1);
   const odds = CARD_ODDS[Math.min(3, Math.max(1, run.book))], out = [], taken = /* @__PURE__ */ new Set();
   for (let i = 0; i < n; i++) {

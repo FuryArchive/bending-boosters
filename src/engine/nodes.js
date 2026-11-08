@@ -3,6 +3,7 @@ import { cardByKey, catalog, isRunCard, keyOf } from "./catalog.js";
 import { withRng } from "./rng.js";
 import { jokerById } from "../data/jokers.js";
 import { cardOffers, jokerOffers } from "./offers.js";
+import { runSets } from "./pools.js";
 import { OFFERINGS, OFFERING_SLOTS, itemById } from "../data/items.js";
 import { EVENTS, EVENT_IDS, eventJokerPool } from "../data/events.js";
 
@@ -199,9 +200,9 @@ var H = {
     run.pending = { kind: "reward", gold: 0, cards: cardOffers(run, n, rng).map(keyOf), cardTaken: false, jokers: null, jokerTaken: true, back: run.pending };
   },
   randomCard(run, rng, rarity) {
-    const owned = new Set(run.ownedKeys);
-    let pool = catalog().filter((c2) => isRunCard(c2) && c2.r === rarity && owned.has(keyOf(c2)));
-    if (!pool.length) pool = catalog().filter((c2) => isRunCard(c2) && c2.r === rarity);
+    const owned = new Set(run.ownedKeys), sets = runSets(run);
+    let pool = catalog().filter((c2) => isRunCard(c2) && sets.includes(c2.set) && c2.r === rarity && owned.has(keyOf(c2)));
+    if (!pool.length) pool = catalog().filter((c2) => isRunCard(c2) && sets.includes(c2.set) && c2.r === rarity);
     if (!pool.length) return null;
     const c = rng.pick(pool);
     addCard(run, c);

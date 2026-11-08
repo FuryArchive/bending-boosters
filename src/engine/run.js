@@ -3,7 +3,7 @@ import { createFight, endTurn, playCard } from "./flow.js";
 import { mechanicsFor } from "./mechanics.js";
 import { createRng, hashStr, withRng } from "./rng.js";
 import { generateBook, nodeById, startNodes } from "./map.js";
-import { starterDeck } from "./pools.js";
+import { runColours, runSets, starterDeck } from "./pools.js";
 import { enemyForNode } from "../data/enemies.js";
 import { jokerById } from "../data/jokers.js";
 import { startCharms } from "./offers.js";
@@ -48,7 +48,7 @@ export function createRun({ seed, nation = "water", ownedKeys = [], ownedStars =
   };
   withRng(run, (rng) => {
     run.maps[1] = generateBook(1, rng);
-    run.deck = starterDeck(nation);
+    run.deck = starterDeck(runColours({ nation }), runSets({}));
     run.nextUid = run.deck.length;
     if (startCharmId) run.jokers.push({ id: startCharmId, stars: 1 });
     else run.pending = { kind: "start", charms: startCharms(rng).map((j) => j.id) };
