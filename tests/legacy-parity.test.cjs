@@ -57,6 +57,12 @@ test('a v2 save paused mid-fight resumes identically in the new build', () => {
   const a = old.ctx.createRun({ seed: 'PARITY-MIDFIGHT', nation: 'fire', ownedKeys: [], ownedStars: {} });
   autoplay(old.ctx, a, { until: r => r.fight && r.fight.turn >= 2 && r.fight.chain.length > 0 });
   assert.ok(a.fight, 'paused in a fight');
+  // A Firebending card goes to the front of the hand, free, so it is the first card played after
+  // the resume: its keyword Flow only counts if the new build reattached TLA's mechanics.
+  const rhino = old.ctx.toRunCard(old.data.base.find(c => c.name === 'Rough Rhino Cavalry'), { uid: 'fb-rhino' });
+  Object.assign(rhino, { energy: 0, hpCost: 0 });
+  a.deck.push(rhino); a.fight.hand.unshift(rhino);
+  assert.ok(a.fight.flow > 1 && a.fight.hand[0].keywords.firebending > 0);
   const b = neu.ctx.deserialize(old.ctx.serialize(a));
   assert.equal(b.v, 3); assert.deepStrictEqual(plain(b.colours), ['R']);
   const trail = [];
