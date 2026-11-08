@@ -60,6 +60,50 @@ const seededPacks = (page, seed, n, code) => page.evaluate(({ seed, n, code }) =
       await multi.ctx.close();
     });
 
+    await group('cards from every set are found and priced', async () => {
+      const { page, ctx } = await fresh();
+      const r = await page.evaluate(() => ({
+        name: findCard('TST:9') && findCard('TST:9').name, foil: priceOf(findCard('TST:9'), true),
+        tle: !!findCard('TLE:1'), query: scryfallQuery(['tla', 'tle']),
+      }));
+      assert.deepEqual(r, { name: 'Fixture Titan', foil: 20, tle: true, query: '(set:tla or set:tle)' });
+      await ctx.close();
+    });
+
+    await group('image cache refreshes when the sets change', async () => {
+      const { page, ctx } = await fresh();
+      assert.deepEqual(await page.evaluate(() => [
+        imgCacheFresh({ v: 2, t: Date.now(), codes: ['tla', 'tle'], m: {} }, ['tla', 'tle']),
+        imgCacheFresh({ v: 2, t: Date.now(), codes: ['tle', 'tla'], m: {} }, ['tla', 'tle']),
+        imgCacheFresh({ v: 2, t: Date.now(), codes: ['tla', 'tle'], m: {} }, ['tla', 'tle', 'tst']),
+        imgCacheFresh({ v: 2, t: Date.now(), m: {} }, ['tla', 'tle']),
+      ]), [true, true, false, false]);
+      await ctx.close();
+    });
+
+    await group('a shared name shares stars', async () => {
+      const { page, ctx } = await fresh();
+      const r = await page.evaluate(() => {
+        const tla = BASE.find((c) => c.name === 'Otter-Penguin');
+        S.coll = { [cardKey(tla)]: 7, 'TST:1': 5 }; S.foil = {}; S.settings.keepJourney = 12;
+        const plan = sellExtrasPlan(null).plan;
+        return { owned: owned('Otter-Penguin'), sold: plan.filter((p) => p.key === cardKey(tla) || p.key === 'TST:1').length };
+      });
+      assert.deepEqual(r, { owned: 12, sold: 0 });
+      await ctx.close();
+    });
+
+    await group('unknown set keys are kept and ignored', async () => {
+      const { page, ctx } = await fresh({ url: GAME_URL });
+      await page.evaluate(() => {
+        S.coll['TMT:5'] = 3; S.foil['TMT:6'] = 1; S.hist.push(['TMT:5@common']); save();
+        collectionValue(); showView('collection'); renderCollection(); showView('stats'); renderStats();
+        sellList(sellExtrasPlan(null).items); showView('decks');
+      });
+      assert.equal(await page.evaluate(() => S.coll['TMT:5']), 3);
+      await ctx.close();
+    });
+
     assert.deepEqual(errors, []);
     console.log(`ALL SET-PACKAGE CHECKS PASSED (${groups} groups; no page errors)`);
   } finally {

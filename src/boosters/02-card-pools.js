@@ -1,5 +1,5 @@
 /* ================= Card pools ================= */
-const BASE=DATA.base, ETERN=DATA.eternal, TREAT=DATA.treat;
+const BASE=pkgBase(MAIN_SET), ETERN=PKG[MAIN_SET].cards.eternal||[], TREAT=PKG[MAIN_SET].cards.treat||{};
 const TREAT_INFO=PKG[MAIN_SET].sheets; // special-version sheets: name -> {id,label,cls}
 // Per set: the base printing for each name (a non-land printing wins over a land).
 const NAMED={};

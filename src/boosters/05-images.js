@@ -9,11 +9,19 @@ function imgStatus(){
     imgIndexState==='failed'?'Couldn\'t reach Scryfall, so cards use generated art.':'';
   if(el) el.textContent=txt; if(info) info.textContent=n?`${n} prints cached`:'not cached';
 }
+// The Scryfall search for every set the build ships, e.g. "(set:tla or set:tle)".
+const scryfallQuery=codes=>'('+codes.map(c=>'set:'+c).join(' or ')+')';
+// A cached index is reused for 14 days, and only while it covers exactly these Scryfall sets.
+function imgCacheFresh(cache,codes){
+  if(!cache||cache.v!==2||!(Date.now()-cache.t<14*864e5)||!Array.isArray(cache.codes)) return false;
+  return [...cache.codes].sort().join()===[...codes].sort().join();
+}
 async function loadImgIndex(force){
   if(!S.settings.real) { imgStatus(); return; }
-  if(!force){ try{ const c=JSON.parse(localStorage.getItem('bb.imgidx')||'null'); if(c&&c.v===2&&Date.now()-c.t<14*864e5&&LIVEP){ IMG=c.m; imgIndexState='ready'; imgStatus(); return; } }catch(e){} }
+  const codes=SET_PACKAGES.flatMap(p=>p.scryfall);
+  if(!force){ try{ const c=JSON.parse(localStorage.getItem('bb.imgidx')||'null'); if(imgCacheFresh(c,codes)&&LIVEP){ IMG=c.m; imgIndexState='ready'; imgStatus(); return; } }catch(e){} }
   imgIndexState='loading'; imgStatus();
-  let url='https://api.scryfall.com/cards/search?q='+encodeURIComponent('(set:tla or set:tle)')+'&unique=prints&order=set&include_extras=true';
+  let url='https://api.scryfall.com/cards/search?q='+encodeURIComponent(scryfallQuery(codes))+'&unique=prints&order=set&include_extras=true';
   const m={}, pm={};
   try{
     while(url){
@@ -30,7 +38,7 @@ async function loadImgIndex(force){
     }
     IMG=m; imgIndexState='ready'; LIVEP={t:Date.now(),m:pm};
     try{ localStorage.setItem('bb.prices',JSON.stringify(LIVEP)); }catch(e){}
-    try{ localStorage.setItem('bb.imgidx',JSON.stringify({v:2,t:Date.now(),m})); }catch(e){}
+    try{ localStorage.setItem('bb.imgidx',JSON.stringify({v:2,t:Date.now(),codes,m})); }catch(e){}
     refreshVisibleImages();
   }catch(e){ console.warn('Scryfall index failed',e); imgIndexState='failed'; }
   imgStatus();

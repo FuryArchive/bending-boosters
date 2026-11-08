@@ -8,14 +8,9 @@ document.getElementById('colFilters').addEventListener('click',e=>{
 });
 ['fSet','fCol','fq','fSort'].forEach(id=>document.getElementById(id).addEventListener('input',renderCollection));
 let SPEC_LIST=null;
-function specList(){
-  if(SPEC_LIST) return SPEC_LIST;
-  const seen=new Set(); SPEC_LIST=[];
-  Object.keys(TREAT_INFO).forEach(sh=>treatCards(sh).forEach(c=>{const k=cardKey(c); if(!seen.has(k)){seen.add(k);SPEC_LIST.push(c);}}));
-  return SPEC_LIST.sort((a,b)=>+a.num-+b.num);
-}
-function ownedName(name,set){ // any version
-  const lists = set==='TLE'?ETERN:BASE.concat(specList());
+function specList(){ return pkgSpecials(MAIN_SET); }
+function ownedName(name,set){ // any version; set is a package code or an Eternal set code (TLE)
+  const lists = pkgOf(set)?pkgBase(set).concat(pkgSpecials(set)):allEternal().filter(c=>c.set===set);
   return lists.some(c=>c.name===name&&(S.coll[cardKey(c)]||S.foil[cardKey(c)]));
 }
 function renderCollection(){

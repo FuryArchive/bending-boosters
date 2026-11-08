@@ -316,7 +316,7 @@ export function mountJourney(root, legacy) {
   }
   function setupHTML() {
     const su = setup(), t = T(), pool = L.BASE.filter((c) => isRunCard(c) && su.sets.includes(c.set)).length;
-    const arch = su.sets.length === 1 && su.sets[0] === "TLA" && L.pairNames || {};
+    const arch = su.sets.length === 1 && L.pairNames && L.pairNames[su.sets[0]] || {};
     const pairName = (p) => p.split("").map((c) => t.colours[COLOUR_ELEMENT[c]].name).join(" &amp; ");
     const sets = su.showStep ? `<h3 class="jx-h">Choose your cards</h3><div class="row jx-setchips">${su.choices.map((code) => `<button class="chip${su.sets.includes(code) ? " on" : ""}" data-set="${code}">${L.esc(setByCode(code).name)}</button>`).join("")}<button class="chip${su.sets.length === su.choices.length ? " on" : ""}" data-set="*">All my sets</button></div>` : `<p class="note jx-setline">Cards from ${L.esc(setByCode(su.sets[0]).name)}</p>`;
     const pairs = PAIRS.map((p) => {

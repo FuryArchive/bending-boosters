@@ -40,5 +40,5 @@ function cardHTML(c,foil,face,size,eager){
   </div>`;
 }
 let CARD_IDX=null;
-function findCard(k){ if(!CARD_IDX){ CARD_IDX={}; BASE.concat(ETERN.map(c=>Object.assign({},c,{treat:'etern'})),specList()).forEach(c=>CARD_IDX[c.set+':'+c.num]=c); } return CARD_IDX[k]; }
+function findCard(k){ if(!CARD_IDX){ CARD_IDX={}; ALL_BASE.concat(allEternal(),allSpecials()).forEach(c=>CARD_IDX[c.set+':'+c.num]=c); } return CARD_IDX[k]; }
 

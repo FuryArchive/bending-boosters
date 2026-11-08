@@ -45,7 +45,7 @@ function renderStats(){
   }).join('');
   const ds=S.drySpans; const avg=ds.length?ds.reduce((a,b)=>a+b,0)/ds.length:0;
   document.getElementById('drought').innerHTML=`Current streak without a mythic: <b>${S.since}</b> packs · longest: <b>${S.maxDry}</b> · average gap: <b>${avg?avg.toFixed(1):'—'}</b> (model: ${(1/e.pAnyM).toFixed(1)})`;
-  const idx={}; BASE.concat(ETERN,specList()).forEach(c=>idx[cardKey(c)]=c);
+  const idx={}; ALL_BASE.concat(allEternal(),allSpecials()).forEach(c=>idx[cardKey(c)]=c);
   const recent=[]; for(let i=S.hist.length-1;i>=0&&recent.length<80;i--){
     const packNo=S.packs-(S.hist.length-1-i);
     S.hist[i].forEach(ent=>{const [kk,slot]=ent.split('@'); const foil=kk.endsWith('*'); const c=idx[kk.replace('*','')]; if(c&&(c.r==='R'||c.r==='M'||isSpecial(c)||c.set==='TLE')) recent.push({packNo,c,foil});});
@@ -53,7 +53,7 @@ function renderStats(){
   document.getElementById('histList').innerHTML=recent.length?`<table><tr><th>Pack</th><th>Card</th><th>Version</th></tr>${recent.map(r=>`<tr><td class="dim">#${r.packNo}</td><td><span class="rdot" style="background:${RC[r.c.r]}"></span>${esc(r.c.flavor||r.c.name)}</td><td class="muted">${r.c.set==='TLE'?'Eternal':isSpecial(r.c)?(Object.values(TREAT_INFO).find(t=>t.id===r.c.treat)||{}).label:'Regular'}${r.foil?' ★ foil':''}</td></tr>`).join('')}</table>`:'<p class="muted">Open some packs first.</p>';
 }
 document.getElementById('copyCsv').onclick=async()=>{
-  const idx={}; BASE.concat(ETERN,specList()).forEach(c=>idx[cardKey(c)]=c);
+  const idx={}; ALL_BASE.concat(allEternal(),allSpecials()).forEach(c=>idx[cardKey(c)]=c);
   const first=S.packs-S.hist.length+1;
   let csv='pack,slot,set,number,name,rarity,version,foil\n';
   S.hist.forEach((pk,i)=>pk.forEach(ent=>{const [kk,slot]=ent.split('@'); const foil=kk.endsWith('*'); const c=idx[kk.replace('*','')]; if(!c) return;

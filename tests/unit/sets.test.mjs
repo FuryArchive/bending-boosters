@@ -6,6 +6,7 @@ import { PAIRS, pairId, normColours } from '../../src/engine/colours.js';
 import { themeForSets } from '../../src/engine/sets.js';
 import { isRunCard, setCatalog } from '../../src/engine/catalog.js';
 import { journeyOwnership, setupSets } from '../../src/engine/ownership.js';
+import { TLA_SET } from '../../src/sets/tla/set.js';
 
 const data = JSON.parse(fs.readFileSync(new URL('../../src/sets/tla/cards.json', import.meta.url), 'utf8'));
 setCatalog(data.base);
@@ -39,4 +40,8 @@ test('set step: owned sets, fallback to every Journey set, step only for 2+', ()
   assert.deepEqual(setupSets({ journey: ['TLA'], owned: [] }), { choices: ['TLA'], selected: ['TLA'], showStep: false });
   assert.deepEqual(setupSets({ journey: ['TLA', 'TMT'], owned: ['TMT', 'TLE'] }).choices, ['TMT']);
   assert.equal(setupSets({ journey: ['TLA', 'TMT'], owned: ['TLA', 'TMT'] }).showStep, true);
+});
+test('the Journey TLA set record matches its package', () => {
+  const pkg = JSON.parse(fs.readFileSync(new URL('../../src/sets/tla/set.json', import.meta.url), 'utf8'));
+  assert.deepEqual([TLA_SET.code, TLA_SET.name], [pkg.code, pkg.name]);
 });

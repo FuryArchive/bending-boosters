@@ -25,7 +25,7 @@ function openPack(code=MAIN_SET){
   return out;
 }
 function ownedAnyName(c){ // owned any printing of this card name before this pull
-  if(c.set==='TLE') return false;
+  if(c.treat==='etern') return false;
   return (NAME_KEYS[c.name]||[]).some(k=>S.coll[k]||S.foil[k]);
 }
 const ORDER={common:0,cb:1,unc:2,land:3,wild:4,foil:5,rare:6};

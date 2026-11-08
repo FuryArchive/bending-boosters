@@ -1,12 +1,13 @@
 /* ================= Decks ================= */
-const NAME_KEYS={}; // name → all TLA keys (base + special prints)
-function initNameKeys(){ BASE.concat(specList()).forEach(c=>{ (NAME_KEYS[c.name]=NAME_KEYS[c.name]||[]).push(cardKey(c)); }); }
+const NAME_KEYS={}; // name → every key with that name (base + special prints, every set)
+function initNameKeys(){ ALL_BASE.concat(allSpecials()).forEach(c=>{ (NAME_KEYS[c.name]=NAME_KEYS[c.name]||[]).push(cardKey(c)); }); }
 function owned(name){ return (NAME_KEYS[name]||[]).reduce((s,k)=>s+(S.coll[k]||0)+(S.foil[k]||0),0); }
 function ownedTLE(c){ const k=cardKey(c); return (S.coll[k]||0)+(S.foil[k]||0); }
 function mv(c){ if(!c.cost) return 0; return c.cost.split(' ').reduce((s,t)=>s+(/^\d+$/.test(t)?+t:t==='X'?0:1),0); }
 const PAIRS={WU:'Azorius',WB:'Orzhov',RW:'Boros',GW:'Selesnya',UB:'Dimir',UR:'Izzet',GU:'Simic',BR:'Rakdos',BG:'Golgari',RG:'Gruul'};
 const BASIC_NUM={W:['Plains','282'],U:['Island','283'],B:['Swamp','284'],R:['Mountain','285'],G:['Forest','286']};
-const KEYSET={}; DECKS.arch.forEach(a=>KEYSET[a.id]=new Set(a.key));
+const deckPkg=()=>PKG[MAIN_SET];
+const KEYSET={}; deckPkg().archetypes.forEach(a=>KEYSET[a.id]=new Set(a.key));
 function buildDeck(pair,fmt,src){
   const cols=new Set(pair.split(''));
   const keys=KEYSET[pair]||new Set();
@@ -53,11 +54,11 @@ function fitAll(fmt){ return Object.keys(PAIRS).map(p=>({pair:p,d:buildDeck(p,fm
 let DECK=null;
 function renderDecks(){
   const sel=document.getElementById('dArch');
-  if(!sel.options.length){ sel.innerHTML=`<option value="auto">Auto · best fit for my collection</option>`+DECKS.arch.map(a=>`<option value="${a.id}">${PAIRS[a.id]} (${a.id}) · ${a.name.replace(PAIRS[a.id]+' ','')}</option>`).join(''); }
+  if(!sel.options.length){ sel.innerHTML=`<option value="auto">Auto · best fit for my collection</option>`+deckPkg().archetypes.map(a=>`<option value="${a.id}">${PAIRS[a.id]} (${a.id}) · ${a.name.replace(PAIRS[a.id]+' ','')}</option>`).join(''); }
   const fmt=document.getElementById('dFmt').value;
   const fits=fitAll(fmt); const fitMap={}; fits.forEach((f,i)=>fitMap[f.pair]={...f,rank:i});
   const pmax=fits[0].d.power||1;
-  document.getElementById('archGrid').innerHTML=DECKS.arch.map(a=>{
+  document.getElementById('archGrid').innerHTML=deckPkg().archetypes.map(a=>{
     const have=a.key.filter(k=>owned(k)>0).length; const f=fitMap[a.id];
     const pct=Math.max(0,Math.min(100,(f.d.power/5.5)*100));
     return `<div class="arch${f.rank===0&&S.packs?' best':''}"><div class="top"><span class="pp">${a.id.split('').map(x=>`<span class="pip ${x}"></span>`).join('')}</span><b>${esc(a.name)}</b>${f.rank===0&&S.packs?'<span class="pill" style="padding:3px 9px;font-size:12px;border-color:#e8b85a">Best fit</span>':''}</div>
@@ -66,7 +67,7 @@ function renderDecks(){
       <div class="kchips">${a.key.map(k=>`<span class="kchip${owned(k)?' have':''}" data-n="${esc(k)}">${esc(k)}${owned(k)>1?' ×'+owned(k):''}</span>`).join('')}</div>
       <div><button class="btn" data-build="${a.id}" style="padding:7px 12px;font-size:14px">Build this deck</button></div></div>`;
   }).join('');
-  document.getElementById('stdGrid').innerHTML=DECKS.std.map(d=>{
+  document.getElementById('stdGrid').innerHTML=deckPkg().decks.map(d=>{
     const tot=d.key.length*4, have=d.key.reduce((s,k)=>s+Math.min(4,owned(k)),0);
     return `<div class="arch"><div class="top"><b>${esc(d.name)}</b><span class="pill" style="padding:3px 9px;font-size:12px">${d.share} of winning decks</span></div>
       <div class="note">${esc(d.note)}</div>
@@ -83,7 +84,7 @@ function buildAndShow(fits){
   const d=buildDeck(pair,fmt); DECK=d;
   const out=document.getElementById('deckOut');
   if(!S.packs){ out.innerHTML='<div class="note">Open some packs first. The builder only uses cards you own.</div>'; return; }
-  const arch=DECKS.arch.find(a=>a.id===pair);
+  const arch=deckPkg().archetypes.find(a=>a.id===pair);
   const sec=(title,list)=>list.length?`<div class="dsec"><h4>${title} (${list.reduce((s,g)=>s+g.n,0)})</h4>${list.sort((a,b)=>a.m-b.m||b.sc-a.sc).map(g=>`<div class="dline" data-k="${g.c.set}:${g.c.num}"><span class="q">${g.n}</span><span class="rdot" style="background:${RC[g.c.r]};box-shadow:0 0 0 1px #fff3"></span><span class="nm">${esc(g.c.flavor||g.c.name)}</span><span class="pips">${pips(g.c.cost)}</span></div>`).join('')}</div>`:'';
   const cre=d.groups.filter(g=>g.cre&&!g.isLand), spl=d.groups.filter(g=>!g.cre&&!g.isLand), lnd=d.groups.filter(g=>g.isLand);
   const basicsHTML=Object.entries(d.basics).filter(([,n])=>n>0).map(([x,n])=>`<div class="dline"><span class="q">${n}</span><span class="pip ${x}" style="font-size:14px"></span><span class="nm">${BASIC_NUM[x][0]}</span></div>`).join('');
