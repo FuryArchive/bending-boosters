@@ -1,3 +1,5 @@
+import { isJourneySet } from "./sets.js";
+
 var CARDS = [];
 var BY_KEY = /* @__PURE__ */ new Map();
 var BY_NAME = /* @__PURE__ */ new Map();
@@ -11,4 +13,4 @@ export function setCatalog(cards) {
 export var catalog = () => CARDS;
 export var cardByKey = (k) => BY_KEY.get(k) || null;
 export var cardByName = (n) => BY_NAME.get(n) || null;
-export var isRunCard = (c) => c.set === "TLA" && c.r !== "L" && !/Land/.test(c.type || "");
+export var isRunCard = (c) => isJourneySet(c.set) && c.r !== "L" && !/Land/.test(c.type || "");
