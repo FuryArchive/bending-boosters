@@ -19,10 +19,11 @@ const read = p => {
   if (text.includes('\r')) fail(`${p}: contains CR characters; use LF line endings`);
   return text;
 };
+// Thrown so callers (tests, tools/extract.mjs) can catch it; the command line prints it and exits 1.
 function fail(msg) {
-  console.error(`build: ${msg}`);
-  process.exit(1);
+  throw new Error(msg);
 }
+let extraSets = [];
 
 // esbuild's IIFE runtime prelude, exactly as the original bundle printed it.
 export const PRELUDE = `  var __defProp = Object.defineProperty;
@@ -114,6 +115,23 @@ function journeyBundle(spec) {
   return out.join('\n') + '\n';
 }
 
+// Each set package dir holds set.json, cards.json and prices.json. The game gets them as one constant.
+function setPackages(dirs) {
+  const codes = new Set();
+  const pkgs = dirs.map((dir) => {
+    const load = (f) => {
+      const file = path.join(dir, f);
+      if (!fs.existsSync(path.join(root, file))) fail(`${dir}: missing ${f}`);
+      try { return JSON.parse(read(file)); } catch (err) { fail(`${file}: ${err.message}`); }
+    };
+    const set = load('set.json');
+    if (codes.has(set.code)) fail(`duplicate set code ${set.code}`);
+    codes.add(set.code);
+    return { ...set, cards: load('cards.json'), prices: load('prices.json') };
+  });
+  return `const SET_PACKAGES = ${JSON.stringify(pkgs)};\n`;
+}
+
 function part(p) {
   if (typeof p === 'string') {
     const text = read(p);
@@ -126,12 +144,15 @@ function part(p) {
     try { value = JSON.parse(read(p.json)); } catch (err) { fail(`${p.json}: ${err.message}`); }
     return `const ${p.const} = ${JSON.stringify(value)};\n`;
   }
+  if (p.sets) return setPackages([...p.sets, ...extraSets]);
   if (p.journey) return journeyBundle(p.journey);
   fail(`unknown part ${JSON.stringify(p)}`);
 }
 
-export function build(dir = ROOT) {
+// withSets: extra set package dirs (relative to dir), added after the shipped ones; test builds only.
+export function build(dir = ROOT, { withSets = [] } = {}) {
   root = dir;
+  extraSets = withSets;
   const config = JSON.parse(read('build.config.json'));
   const template = read(config.template);
   const used = new Set();
@@ -149,11 +170,18 @@ const sha256 = s => crypto.createHash('sha256').update(s).digest('hex');
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
-  const { html, config } = build();
+  const withSets = args.flatMap((a, i) => a === '--with-set' ? [args[i + 1]] : []);
+  let html, config;
+  try {
+    ({ html, config } = build(ROOT, { withSets }));
+  } catch (err) {
+    console.error(`build: ${err.message}`);
+    process.exit(1);
+  }
   const ci = args.indexOf('--check');
   if (ci >= 0) {
     const target = args[ci + 1];
-    if (!target) fail('--check needs a file');
+    if (!target) { console.error('build: --check needs a file'); process.exit(1); }
     const want = fs.readFileSync(path.resolve(target), 'utf8');
     if (want === html) {
       console.log(`identical to ${target}\nsha256 ${sha256(html)}`);

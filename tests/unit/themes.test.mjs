@@ -9,7 +9,7 @@ import { JOKERS } from '../../src/data/jokers.js';
 import { cardByName, keyOf, setCatalog } from '../../src/engine/catalog.js';
 import { MISSING_EVENT, eventById } from '../../src/engine/event-kit.js';
 
-setCatalog(JSON.parse(fs.readFileSync(new URL('../../src/catalog/data.json', import.meta.url), 'utf8')).base);
+setCatalog(JSON.parse(fs.readFileSync(new URL('../../src/sets/tla/cards.json', import.meta.url), 'utf8')).base);
 const book = () => ({ kicker: 'K', title: 'T', el: 'Neutral', places: '', bossName: 'B', hue: ['#000', '#000', '#000'],
   backdrop: {}, roster: [], elites: [], boss: { id: 'b' } });
 const plainTheme = id => ({ id, name: id, colours: {}, books: { 1: book(), 2: book(), 3: book() }, events: {}, enemyArt: {}, text: {}, names: { charm: {}, offering: {}, tag: {} } });

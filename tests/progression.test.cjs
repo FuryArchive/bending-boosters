@@ -24,7 +24,7 @@ function section(start, end) {
 const e = vm.createContext({ structuredClone, console });
 vm.runInContext(section('  // src/data/overrides.js', '  // src/ui/cardview.js'), e,
   { filename: sourcePath });
-e.setCatalog(JSON.parse(html.match(/^const DATA = (.*);$/m)[1]).base);
+e.setCatalog(require('./harness/engine.cjs').catalogOf(html).base);
 // Execute the actual rest renderer, without requiring a browser for unit tests.
 const ui = vm.createContext({ st: { run: null }, sceneArt: () => '' });
 vm.runInContext(section('    const continueBtn =', '    function cont()') +

@@ -11,7 +11,8 @@
 //  - CSS: the first <style> is split at its major section comments into src/styles/main/NN-*.css;
 //    the second (id="visual-edition") becomes src/styles/visual-edition.css.
 //  - Pack simulator script: split at its `/* ===== Section ===== */` comments into
-//    src/boosters/NN-*.js. The DATA/DECKS/PRICES lines become pretty-printed JSON in src/catalog/.
+//    src/boosters/NN-*.js. The SET_PACKAGES line becomes pretty-printed JSON in src/sets/<code>/ (set, cards, prices);
+//    older builds' DATA/DECKS/PRICES lines become pretty-printed JSON in src/catalog/.
 //  - Journey script: the esbuild IIFE is split at its `// src/...` module comments back into
 //    ES modules at those paths. Imports/exports are recomputed with scope analysis.
 //  - Everything else becomes the src/index.html template with <!-- @slot --> markers.
@@ -112,6 +113,22 @@ const boosterParts = [];
     boosterParts.push(file);
   };
   for (const line of lines) {
+    const sets = line.match(/^const SET_PACKAGES = (\[.*\]);$/);
+    if (sets) {
+      const value = JSON.parse(sets[1]);
+      if (JSON.stringify(value) !== sets[1]) throw Error('SET_PACKAGES does not round-trip through JSON');
+      flush();
+      cur = { title: 'continued', lines: [] };
+      const dirs = value.map(({ cards, prices, ...set }) => {
+        const dir = `src/sets/${set.code.toLowerCase()}`;
+        write(`${dir}/set.json`, pretty(set) + '\n');
+        write(`${dir}/cards.json`, pretty(cards) + '\n');
+        write(`${dir}/prices.json`, pretty(prices) + '\n');
+        return dir;
+      });
+      boosterParts.push({ sets: dirs });
+      continue;
+    }
     const data = line.match(/^const ([A-Z][A-Z0-9_]*) = (\{.*\}|\[.*\]);$/);
     if (data) {
       const value = JSON.parse(data[2]);

@@ -6,7 +6,7 @@ import { createRun, payout, runBrief, abandonRun, serialize, deserialize, availa
 import { surgeOf } from '../../src/engine/mechanics.js';
 import { setCatalog } from '../../src/engine/catalog.js';
 
-setCatalog(JSON.parse(fs.readFileSync(new URL('../../src/catalog/data.json', import.meta.url), 'utf8')).base);
+setCatalog(JSON.parse(fs.readFileSync(new URL('../../src/sets/tla/cards.json', import.meta.url), 'utf8')).base);
 const newRun = () => createRun({ seed: 'T', nation: 'water' });
 
 test('engine modules import natively', () => {

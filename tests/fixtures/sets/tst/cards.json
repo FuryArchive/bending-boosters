@@ -1,0 +1,15 @@
+{
+  "base": [
+    {"set":"TST","num":"1","r":"C","name":"Otter-Penguin","artist":"Fixture","cost":"1 U","type":"Creature Bird Otter","pt":"1/2","kw":[],"col":"U"},
+    {"set":"TST","num":"2","r":"C","name":"Fixture Scout","artist":"Fixture","cost":"1 W","type":"Creature Human Scout","pt":"2/1","kw":[],"col":"W"},
+    {"set":"TST","num":"3","r":"C","name":"Fixture Spark","artist":"Fixture","cost":"R","type":"Instant","kw":[],"col":"R"},
+    {"set":"TST","num":"4","r":"C","name":"Fixture Wall","artist":"Fixture","cost":"2 G","type":"Creature Plant Wall","pt":"0/4","kw":[],"col":"G"},
+    {"set":"TST","num":"5","r":"U","name":"Fixture Captain","artist":"Fixture","cost":"2 W","type":"Creature Human Soldier","pt":"3/3","kw":[],"col":"W"},
+    {"set":"TST","num":"6","r":"U","name":"Fixture Bolt","artist":"Fixture","cost":"1 R","type":"Sorcery","kw":[],"col":"R"},
+    {"set":"TST","num":"7","r":"R","name":"Fixture Drake","artist":"Fixture","cost":"3 U","type":"Creature Drake","pt":"3/3","kw":[],"col":"U"},
+    {"set":"TST","num":"8","r":"R","name":"Fixture Shade","artist":"Fixture","cost":"2 B","type":"Creature Shade","pt":"2/2","kw":[],"col":"B"},
+    {"set":"TST","num":"9","r":"M","name":"Fixture Titan","artist":"Fixture","cost":"5 G","type":"Legendary Creature Giant","pt":"7/7","kw":[],"col":"G"}
+  ],
+  "eternal": [],
+  "treat": {}
+}

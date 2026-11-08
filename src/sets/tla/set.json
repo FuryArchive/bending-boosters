@@ -1,5 +1,14 @@
 {
-  "arch": [
+  "code": "TLA",
+  "name": "Avatar: The Last Airbender",
+  "released": "2025-11-21",
+  "scryfall": [
+    "tla",
+    "tle"
+  ],
+  "accent": "#e8c25a",
+  "symbol": "TLA",
+  "archetypes": [
     {"id":"WU","name":"Azorius Airbending Flyers","theme":"Evasive flyers backed by airbending tempo. Win in the air while ground attackers get bounced.","key":["Momo, Friendly Flier","Forecasting Fortune Teller","First-Time Flyer","Glider Kids","Aang, Swift Savior","Teo, Spirited Glider","Octopus Form","Airbending Lesson"]},
     {"id":"WB","name":"Orzhov Sacrifice","theme":"Aristocrats: make bodies, sacrifice them for value, drain the opponent out.","key":["Obsessive Pursuit","Sandbender Scavengers","Callous Inspector","Corrupt Court Official","Pretending Poxbearers","Pirate Peddlers","Sold Out","Swampsnare Trap"]},
     {"id":"RW","name":"Boros Go-Wide","theme":"Fast aggro with lots of small creatures and tokens, finishing with team pumps.","key":["Wartime Protestors","Suki, Courageous Rescuer","Yuyan Archers","Wandering Musicians","Lightning Strike","Firebending Lesson","Jet, Freedom Fighter","Iroh's Demonstration"]},
@@ -11,7 +20,7 @@
     {"id":"BG","name":"Golgari Counters","theme":"Earthbending and +1/+1 counters grow a resilient board.","key":["Earthbender Ascension","Beifong's Bounty Hunters","Toph, the Blind Bandit","Long Feng, Grand Secretariat","Earth Rumble","Badgermole","Dai Li Agents","Flopsie, Bumi's Buddy"]},
     {"id":"RG","name":"Gruul Big Power","theme":"High-power creatures that reward attacking with big bodies.","key":["Diligent Zookeeper","The Last Agni Kai","Toph, the Blind Bandit","Earth Rumble Wrestlers","The Boulder, Ready to Rumble","Combustion Man","Mongoose Lizard","Omashu City"]}
   ],
-  "std": [
+  "decks": [
     {"name":"Bant Airbending","share":"5.9%","note":"Brand-new archetype built around airbending combos.","key":["Appa, Steadfast Guardian","Aang, Swift Savior","Badgermole Cub"]},
     {"name":"Allies","share":"3.2%","note":"Over half the list comes from the Avatar set.","key":["Earth King's Lieutenant","Katara, the Fearless","Great Divide Guide","Jasmine Dragon Tea Shop"]},
     {"name":"Simic Ouroboroid","share":"10.7%","note":"Badgermole Cub replaced older two-drops.","key":["Badgermole Cub"]},

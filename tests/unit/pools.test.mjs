@@ -8,7 +8,7 @@ import { colourPool, offColourPool, runColours, runSets, starterDeck } from '../
 import { cardOffers } from '../../src/engine/offers.js';
 import { createRng } from '../../src/engine/rng.js';
 
-const data = JSON.parse(fs.readFileSync(new URL('../../src/catalog/data.json', import.meta.url), 'utf8'));
+const data = JSON.parse(fs.readFileSync(new URL('../../src/sets/tla/cards.json', import.meta.url), 'utf8'));
 setCatalog(data.base);
 
 test('a pair pool holds only cards inside the pair, plus colourless', () => {

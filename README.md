@@ -47,9 +47,8 @@ src/index.html           page template: head, markup, and <!-- @slot name --> ma
 src/styles/main/         main stylesheet, in cascade order (00-root … 17-decks)
 src/styles/visual-edition.css   the Nov 2026 visual pass, loaded last as its own <style>
 src/boosters/            the pack simulator: one classic script split into ordered sections
-src/catalog/             data.json (cards: base/eternal/treat), decks.json, prices.json
 src/data/  src/engine/   Journey content and rules engine (pure ES modules, no DOM): colours, set/mechanic/theme registries, pools, encounters, run
-src/sets/tla/            TLA in Journey: set record, its mechanics (Firebending, Earthbend, Lessons, Avatar State), the Avatar theme (enemies, events, Legends)
+src/sets/tla/            the TLA set package: set.json (code, name, archetypes, decks), cards.json (base/eternal/treat), prices.json; and TLA in Journey: set record, its mechanics (Firebending, Earthbend, Lessons, Avatar State), the Avatar theme (enemies, events, Legends)
 src/themes/neutral/      the neutral theme (Acts I–III) for mixed-set runs
 src/content.js           registers every set, mechanic, theme and theme charm the build ships
 src/ui/                  Journey UI: journey.js (screens), cardview, fx/backdrop, sfx, anim
@@ -73,7 +72,7 @@ history/                 the three shipped builds and what changed between them
 `tools/build.mjs` fills each `<!-- @slot name -->` line of `src/index.html` with the parts listed for that slot in `build.config.json`, in order:
 
 - **`styles`, `visual-edition`**: CSS files, joined as-is. Order is cascade order.
-- **`boosters`**: the pack-simulator files, joined as-is into one `<script>`. They share one global scope, like the original single script, so a function defined in `03-state.js` is visible everywhere after it. The `{ "const": "DATA", "json": … }` entries turn each pretty-printed catalog file back into a one-line `const DATA = {…};`.
+- **`boosters`**: the pack-simulator files, joined as-is into one `<script>`. They share one global scope, like the original single script, so a function defined in `03-state.js` is visible everywhere after it. The `{ "sets": ["src/sets/tla"] }` entry reads each set package (`set.json`, `cards.json`, `prices.json`) and emits them as one line, `const SET_PACKAGES = […];`. `node tools/build.mjs --with-set <dir>` adds an extra package, for test builds only.
 - **`journey`**: the Journey ES modules, assembled into the same esbuild-style IIFE that the game always used (`var BBJ = (() => { … })();`). For each module in `build.config.json` order, the build drops the leading `import` lines, removes the `export ` keyword and indents by two spaces. The `// src/...` comment lines in the output are part of the format, and the tests use them to find the engine.
 - **`boot`**: `src/boot.js` then `src/journey-recovery.js`, plain scripts that run after the bundle, so they can use `BBJ`.
 

@@ -7,7 +7,7 @@ import { themeForSets } from '../../src/engine/sets.js';
 import { isRunCard, setCatalog } from '../../src/engine/catalog.js';
 import { journeyOwnership, setupSets } from '../../src/engine/ownership.js';
 
-const data = JSON.parse(fs.readFileSync(new URL('../../src/catalog/data.json', import.meta.url), 'utf8'));
+const data = JSON.parse(fs.readFileSync(new URL('../../src/sets/tla/cards.json', import.meta.url), 'utf8'));
 setCatalog(data.base);
 
 test('pairs are the ten WUBRG-ordered pairs', () => {

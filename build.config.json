@@ -30,17 +30,11 @@
     "boosters": [
       "src/boosters/00-prelude.js",
       {
-        "const": "DATA",
-        "json": "src/catalog/data.json"
+        "sets": [
+          "src/sets/tla"
+        ]
       },
-      {
-        "const": "DECKS",
-        "json": "src/catalog/decks.json"
-      },
-      {
-        "const": "PRICES",
-        "json": "src/catalog/prices.json"
-      },
+      "src/boosters/00b-packages.js",
       "src/boosters/01-rng.js",
       "src/boosters/02-card-pools.js",
       "src/boosters/03-state.js",
