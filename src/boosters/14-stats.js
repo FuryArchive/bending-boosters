@@ -1,14 +1,15 @@
 /* ================= Stats ================= */
 function renderStats(){
   const e=expected(); const P=S.packs||0;
-  const uniq=new Set(BASE.filter(c=>c.r!=='L').map(c=>c.name)); let have=0; uniq.forEach(n=>{if(ownedName(n,'TLA'))have++;});
+  const comp=SET_PACKAGES.map(p=>{ const uniq=new Set(pkgBase(p.code).filter(c=>c.r!=='L').map(c=>c.name)); let have=0; uniq.forEach(n=>{if(ownedName(n,p.code))have++;}); return {p,have,size:Math.max(1,uniq.size)}; });
+  const multi=SET_PACKAGES.length>1;
   const mythics=S.rc.M||0;
   document.getElementById('statTiles').innerHTML=
     tile('Packs opened',P.toLocaleString(),S.cards.toLocaleString()+' cards')+
     tile('Mythics',mythics,P?`1 per ${(P/Math.max(mythics,1)).toFixed(1)} packs`:'')+
     tile('Specials',S.special,P?`expected ${(e.special*P).toFixed(1)}`:'')+
     tile('Eternal',S.eternal,P?`expected ${(e.eternal*P).toFixed(1)}`:'')+
-    tile('Completion',(have/uniq.size*100).toFixed(1)+'%',`${have}/${uniq.size} unique`)+
+    comp.map(x=>tile(multi?'Completion · '+x.p.code:'Completion',(x.have/x.size*100).toFixed(1)+'%',`${x.have}/${x.size} unique${multi?' · '+esc(x.p.name):''}`)).join('')+
     tile('Pity triggers',S.pityHits,S.settings.pity?`at ${S.settings.pity}`:'pity off')+
     (J=>tile('Journey runs',J.runs,`${J.wins} won`)+tile('Best floor',J.bestFloor?`${J.bestFloor} / 45`:'—',J.bestHit?`best hit ${J.bestHit.toLocaleString()}`:'')+tile('Avatar States',J.avatar,'in Journey runs'))(S.journey||{runs:0,wins:0,bestFloor:0,bestHit:0,avatar:0});
   const cv=collectionValue(), ev=packEV().total, earned=(S.runIncome||0)+(S.soldIncome||0)+(S.dailyIncome||0), bal=earned-S.packSpend;

@@ -13,16 +13,33 @@ function ownedName(name,set){ // any version; set is a package code or an Eterna
   const lists = pkgOf(set)?pkgBase(set).concat(pkgSpecials(set)):allEternal().filter(c=>c.set===set);
   return lists.some(c=>c.name===name&&(S.coll[cardKey(c)]||S.foil[cardKey(c)]));
 }
+// The binder's set filter: per set its main set, its Eternal sheet (if any) and its special versions.
+function binderOptions(){
+  const multi=SET_PACKAGES.length>1;
+  return SET_PACKAGES.flatMap(p=>{
+    const et=pkgEternal(p.code), etCode=et.length?et[0].set:null;
+    return [[p.code,`${p.code} · main set`],...(etCode?[[etCode,`${etCode} · Eternal`]]:[]),[`SPEC:${p.code}`,multi?`${p.code} · special versions`:'Special versions']];
+  });
+}
+function binderScope(v){ // -> {code, kind: 'base' | 'eternal' | 'spec'}
+  if(v&&v.startsWith('SPEC:')) return {code:PKG[v.slice(5)]?v.slice(5):MAIN_SET,kind:'spec'};
+  if(PKG[v]) return {code:v,kind:'base'};
+  const owner=SET_PACKAGES.find(p=>pkgEternal(p.code).some(c=>c.set===v));
+  return owner?{code:owner.code,kind:'eternal'}:{code:MAIN_SET,kind:'base'};
+}
 function renderCollection(){
-  const set=document.getElementById('fSet').value, col=document.getElementById('fCol').value, q=document.getElementById('fq').value.trim().toLowerCase();
-  let list = set==='TLA'?BASE : set==='TLE'?ETERN.map(c=>Object.assign({},c,{treat:'etern'})) : specList();
+  const sel=document.getElementById('fSet');
+  if(!sel.options.length) sel.innerHTML=binderOptions().map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join('');
+  const sc=binderScope(sel.value), col=document.getElementById('fCol').value, q=document.getElementById('fq').value.trim().toLowerCase();
+  const base=pkgBase(sc.code), et=pkgEternal(sc.code), sp=pkgSpecials(sc.code);
+  let list = sc.kind==='base'?base : sc.kind==='eternal'?et : sp;
   // summary
-  const uniq=new Set(BASE.filter(c=>c.r!=='L').map(c=>c.name));
-  let have=0; uniq.forEach(n=>{ if(ownedName(n,'TLA')) have++; });
-  const eHave=ETERN.filter(c=>S.coll[cardKey(c)]||S.foil[cardKey(c)]).length;
-  const sHave=specList().filter(c=>S.coll[cardKey(c)]||S.foil[cardKey(c)]).length;
-  document.getElementById('colSummary').innerHTML=`Main set <b>${have}/${uniq.size}</b> (${(have/uniq.size*100).toFixed(1)}%) · Eternal <b>${eHave}/${ETERN.length}</b> · Specials <b>${sHave}/${specList().length}</b>`;
-  document.getElementById('colBar').style.width=(have/uniq.size*100)+'%';
+  const uniq=new Set(base.filter(c=>c.r!=='L').map(c=>c.name));
+  let have=0; uniq.forEach(n=>{ if(ownedName(n,sc.code)) have++; });
+  const eHave=et.filter(c=>S.coll[cardKey(c)]||S.foil[cardKey(c)]).length;
+  const sHave=sp.filter(c=>S.coll[cardKey(c)]||S.foil[cardKey(c)]).length;
+  document.getElementById('colSummary').innerHTML=`${SET_PACKAGES.length>1?esc(PKG[sc.code].name)+' · ':''}Main set <b>${have}/${uniq.size}</b> (${(have/Math.max(1,uniq.size)*100).toFixed(1)}%)${et.length?` · Eternal <b>${eHave}/${et.length}</b>`:''} · Specials <b>${sHave}/${sp.length}</b>`;
+  document.getElementById('colBar').style.width=(have/Math.max(1,uniq.size)*100)+'%';
   list=list.filter(c=>{
     const k=cardKey(c), own=(S.coll[k]||0)+(S.foil[k]||0);
     if(F.own==='have'&&!own) return false; if(F.own==='miss'&&own) return false;

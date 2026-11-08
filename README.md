@@ -67,6 +67,10 @@ tests/                   regression suites (see Tests)
 history/                 the three shipped builds and what changed between them
 ```
 
+## Set packages
+
+Every card set lives in `src/sets/<code>/` (`set.json`, `cards.json`, `prices.json`, plus optional Journey content). [docs/set-package.md](docs/set-package.md) describes the format and the checklist for adding a set.
+
 ## How the build works
 
 `tools/build.mjs` fills each `<!-- @slot name -->` line of `src/index.html` with the parts listed for that slot in `build.config.json`, in order:

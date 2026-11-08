@@ -6,15 +6,18 @@ function ownedTLE(c){ const k=cardKey(c); return (S.coll[k]||0)+(S.foil[k]||0); 
 function mv(c){ if(!c.cost) return 0; return c.cost.split(' ').reduce((s,t)=>s+(/^\d+$/.test(t)?+t:t==='X'?0:1),0); }
 const PAIRS={WU:'Azorius',WB:'Orzhov',RW:'Boros',GW:'Selesnya',UB:'Dimir',UR:'Izzet',GU:'Simic',BR:'Rakdos',BG:'Golgari',RG:'Gruul'};
 const BASIC_NUM={W:['Plains','282'],U:['Island','283'],B:['Swamp','284'],R:['Mountain','285'],G:['Forest','286']};
-const deckPkg=()=>PKG[MAIN_SET];
+// Decks come from one set at a time: the sets that have archetypes (a select appears with 2+).
+const deckSets=()=>SET_PACKAGES.filter(p=>(p.archetypes||[]).length);
+let DECK_SET=(deckSets()[0]||{code:MAIN_SET}).code;
+const deckPkg=()=>PKG[DECK_SET];
 const KEYSET={}; deckPkg().archetypes.forEach(a=>KEYSET[a.id]=new Set(a.key));
 function buildDeck(pair,fmt,src){
   const cols=new Set(pair.split(''));
   const keys=KEYSET[pair]||new Set();
   const cand=[];
   const seen=new Set();
-  BASE.forEach(c=>{ if(c.r==='L'||seen.has(c.name)) return; seen.add(c.name); const n=src?src(c):owned(c.name); if(n) cand.push({c,n}); });
-  if(!src) ETERN.forEach(c=>{ const n=ownedTLE(c); if(n) cand.push({c:Object.assign({},c,{treat:'etern'}),n}); });
+  pkgBase(DECK_SET).forEach(c=>{ if(c.r==='L'||seen.has(c.name)) return; seen.add(c.name); const n=src?src(c):owned(c.name); if(n) cand.push({c,n}); });
+  if(!src) pkgEternal(DECK_SET).forEach(c=>{ const n=ownedTLE(c); if(n) cand.push({c,n}); });
   const items=[];
   for(const {c,n} of cand){
     const cc=(c.col||'').split('').filter(Boolean);
@@ -53,6 +56,10 @@ function buildDeck(pair,fmt,src){
 function fitAll(fmt){ return Object.keys(PAIRS).map(p=>({pair:p,d:buildDeck(p,fmt)})).sort((a,b)=>b.d.power-a.d.power); }
 let DECK=null;
 function renderDecks(){
+  const ds=document.getElementById('deckSet');
+  if(!ds.options.length){ ds.innerHTML=deckSets().map(p=>`<option value="${esc(p.code)}">${esc(p.name)}</option>`).join('');
+    ds.onchange=()=>{ DECK_SET=ds.value; for(const k in KEYSET) delete KEYSET[k]; deckPkg().archetypes.forEach(a=>KEYSET[a.id]=new Set(a.key)); document.getElementById('dArch').innerHTML=''; DECK=null; renderDecks(); }; }
+  ds.hidden=deckSets().length<2;
   const sel=document.getElementById('dArch');
   if(!sel.options.length){ sel.innerHTML=`<option value="auto">Auto · best fit for my collection</option>`+deckPkg().archetypes.map(a=>`<option value="${a.id}">${PAIRS[a.id]} (${a.id}) · ${a.name.replace(PAIRS[a.id]+' ','')}</option>`).join(''); }
   const fmt=document.getElementById('dFmt').value;
@@ -75,7 +82,7 @@ function renderDecks(){
       <div class="kchips">${d.key.map(k=>`<span class="kchip${owned(k)>=4?' have':''}" data-n="${esc(k)}">${esc(k)} · ${Math.min(4,owned(k))}/4</span>`).join('')}</div></div>`;
   }).join('');
   document.querySelectorAll('[data-build]').forEach(b=>b.onclick=()=>{ sel.value=b.dataset.build; buildAndShow(); window.scrollTo({top:0,behavior:'smooth'}); });
-  document.querySelectorAll('.kchip').forEach(ch=>ch.onclick=()=>{ const c=BASE.find(x=>x.name===ch.dataset.n); if(c) openZoom(c,false); });
+  document.querySelectorAll('.kchip').forEach(ch=>ch.onclick=()=>{ const c=pkgBase(DECK_SET).find(x=>x.name===ch.dataset.n); if(c) openZoom(c,false); });
   buildAndShow(fits);
 }
 function buildAndShow(fits){

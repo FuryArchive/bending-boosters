@@ -81,7 +81,7 @@
       <div class="progress" style="margin-top:12px"><i id="colBar" style="width:0"></i></div>
     </div>
     <div class="filters" id="colFilters">
-      <select id="fSet"><option value="TLA">TLA · main set</option><option value="TLE">TLE · Eternal</option><option value="SPEC">Special versions</option></select>
+      <select id="fSet" aria-label="Set"></select>
       <span class="chip on" data-own="all">All</span><span class="chip" data-own="have">Owned</span><span class="chip" data-own="miss">Missing</span>
       <span style="width:8px"></span>
       <span class="chip on" data-r="all">Any rarity</span><span class="chip" data-r="C">Common</span><span class="chip" data-r="U">Uncommon</span><span class="chip" data-r="R">Rare</span><span class="chip" data-r="M">Mythic</span>
@@ -109,7 +109,7 @@
       </div>
       <div id="deckOut" style="margin-top:18px"></div>
     </div>
-    <h2>Draft archetypes</h2>
+    <div class="row" style="justify-content:space-between"><h2>Draft archetypes</h2><select id="deckSet" hidden aria-label="Set"></select></div>
     <p class="note" style="margin-top:-6px">The set's ten two-color draft themes. Key cards are drawn from community archetype guides. Your fit is how strong a deck your current collection makes in those colors.</p>
     <div class="archGrid" id="archGrid"></div>
     <h2 style="margin-top:30px">Standard decks with Avatar cards</h2>

@@ -155,6 +155,32 @@ const seededPacks = (page, seed, n, code) => page.evaluate(({ seed, n, code }) =
       await ctx.close();
     });
 
+    await group('binder per set', async () => {
+      const { page, ctx } = await fresh();
+      await page.evaluate(() => showView('collection'));
+      assert.deepEqual(await page.locator('#fSet option').evaluateAll((o) => o.map((x) => x.value)), ['TLA', 'TLE', 'SPEC:TLA', 'TST', 'SPEC:TST']);
+      await page.locator('#fSet').selectOption('TST');
+      await page.waitForFunction(() => document.querySelectorAll('#colGrid .card[data-k^="TST:"]').length === 9);
+      assert.match(await page.locator('#colSummary').innerText(), /\/9\b/);
+      await ctx.close();
+    });
+
+    await group('stats name every set', async () => {
+      const { page, ctx } = await fresh();
+      await page.evaluate(() => showView('stats'));
+      const text = await page.locator('#statTiles').innerText();
+      assert.match(text, /Avatar: The Last Airbender/); assert.match(text, /Test Set/);
+      await ctx.close();
+    });
+
+    await group('decks stay TLA-only while TST has no archetypes', async () => {
+      const { page, ctx } = await fresh();
+      await page.evaluate(() => showView('decks'));
+      assert.equal(await page.locator('#deckSet').isVisible(), false);
+      assert.equal(await page.locator('#archGrid > *').count(), 10);
+      await ctx.close();
+    });
+
     assert.deepEqual(errors, []);
     console.log(`ALL SET-PACKAGE CHECKS PASSED (${groups} groups; no page errors)`);
   } finally {
