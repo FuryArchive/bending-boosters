@@ -43,14 +43,14 @@ function tryOpen(n,free=false){
   if(S.money<c-1e-9){ if(BB_DEBUG) openShop(`You need ${$$(c)} but have ${$$(S.money)}. Sell some cards, earn money on the Journey, or add funds.`); else showBroke(c); return; }
   if(free){ S.freePacks-=n; S.freeOpened=(S.freeOpened||0)+n; }
   S.money=Math.round((S.money-c)*100)/100; S.packSpend+=c;
-  const packs=[]; for(let i=0;i<n;i++) packs.push(openPack());
+  const code=packSet(), packs=[]; for(let i=0;i<n;i++) packs.push(openPack(code));
   save(); refreshHeader(); renderFreeButton();
   // start downloading images right away, while the tear animation plays
   const flat=packs.flat();
   if(n===1){ preload(flat.map(p=>p.c),'normal'); preload(flat.filter(p=>tier(p)||p.foil).map(p=>p.c),'large'); }
   else preload(flat.filter(p=>tier(p)).map(p=>p.c),'normal');
-  LAST={packs,showAll:false,cost:c};
-  stageOpen(packs);
+  LAST={packs,showAll:false,cost:c,code};
+  stageOpen(packs,code);
 }
 
 /* ---------- Stage ---------- */
@@ -71,7 +71,7 @@ function cancelOpening(){
   spot.querySelectorAll('.part').forEach(el=>el.remove());
   document.getElementById('flash').classList.remove('go');
 }
-function stageOpen(packs){
+function stageOpen(packs,code=MAIN_SET){
   BBJ.showTip('reveal');
   cancelOpening();
   document.getElementById('stSkip').disabled=false;
@@ -84,7 +84,7 @@ function stageOpen(packs){
   if(S.settings.fast){ dealCards(packs); return; }
   stBody.innerHTML=`<div class="bigPackWrap"><div class="pack ${S.settings.hints?g:''}" id="bigPack"><div class="shine"></div>
     <div class="seal"><svg viewBox="0 0 100 100"><g fill="none" stroke="#fff" stroke-opacity=".85" stroke-width="2"><path d="M50 12 C70 22 70 40 50 50 C30 60 30 78 50 88"/><path d="M12 50 C22 30 40 30 50 50 C60 70 78 70 88 50"/></g><circle cx="50" cy="50" r="7" fill="#fff" fill-opacity=".9"/></svg></div>
-    <div class="ptitle"><small>${multi?packs.length+' PACKS':'PLAY BOOSTER · 14 CARDS'}</small>The Last Airbender</div></div>
+    <div class="ptitle"><small>${multi?packs.length+' PACKS':'PLAY BOOSTER · '+cardsPerPack(code)+' CARDS'}</small>${esc(PKG[code].products.play.title)}</div></div>
     <div class="tapHint">${multi?'Click to rip them all open':'Click the pack to tear it open'}</div></div>`;
   stBottom.innerHTML='';
   const bp=document.getElementById('bigPack');

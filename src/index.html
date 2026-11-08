@@ -24,7 +24,7 @@
         <circle cx="20" cy="31" r="4.5" fill="#6fa356"/><circle cx="9" cy="20" r="4.5" fill="#5aa7e0"/>
         <circle cx="20" cy="20" r="3" fill="#f3ead9"/>
       </svg>
-      <div><h1>Bending Boosters</h1><small>Avatar: The Last Airbender (TLA) play booster simulator</small></div>
+      <div><h1>Bending Boosters</h1><small id="appSub">Avatar: The Last Airbender (TLA) play booster simulator</small></div>
     </div>
     <div class="wallet">
       <div class="pill" title="Wallet"><span class="gem" style="background:linear-gradient(135deg,#bff5c8,#2fbf63);box-shadow:0 0 8px #2fbf6388"></span><span id="gems">$0</span></div>
@@ -50,12 +50,14 @@
       <div class="pack" id="pack" title="Open one pack">
         <div class="shine"></div>
         <div class="seal"><svg viewBox="0 0 100 100"><g fill="none" stroke="#fff" stroke-opacity=".85" stroke-width="2"><path d="M50 12 C70 22 70 40 50 50 C30 60 30 78 50 88"/><path d="M12 50 C22 30 40 30 50 50 C60 70 78 70 88 50"/></g><circle cx="50" cy="50" r="7" fill="#fff" fill-opacity=".9"/></svg></div>
-        <div class="ptitle"><small>PLAY BOOSTER · 14 CARDS</small>The Last Airbender</div>
+        <div class="psym" id="packSym" aria-hidden="true"></div>
+        <div class="ptitle" id="packTitle"><small>PLAY BOOSTER · 14 CARDS</small>The Last Airbender</div>
       </div>
       <div class="heroSide">
-        <div class="eyebrow">The Last Airbender · Play boosters</div>
-        <h2>Master all four elements</h2>
-        <div class="muted">Each pack has 14 cards with real Play Booster odds: one rare or mythic, two wildcards (one foil), and a chance at Scene, Field Notes, Battle Pose and Elemental Frame versions.</div>
+        <div class="eyebrow" id="packEyebrow">The Last Airbender · Play boosters</div>
+        <h2 id="packTagline">Master all four elements</h2>
+        <div class="muted" id="packBlurb">Each pack has 14 cards with real Play Booster odds: one rare or mythic, two wildcards (one foil), and a chance at Scene, Field Notes, Battle Pose and Elemental Frame versions.</div>
+        <div class="row setPick" id="setPick" hidden></div>
         <div class="buyRow">
           <button class="buy main" id="open1"><b>Open 1 pack</b><span id="p1cost"></span></button>
           <button class="buy" id="open10"><b>Open 10 packs</b><span id="p10cost"></span></button>
@@ -148,8 +150,8 @@
   <section class="view" id="v-odds">
     <div class="two">
       <div class="panel">
-        <h2>What's in a pack</h2>
-        <p class="note">14 cards per Play Booster. Slot structure and replacement rates follow the open-source <b>Forge</b> project's TLA definition, which is based on the published play booster fact sheet. Special-version rates are approximate.</p>
+        <div class="row" style="justify-content:space-between"><h2 style="margin:0">What's in a pack</h2><select id="oddsSet" hidden aria-label="Set"></select></div>
+        <p class="note" id="oddsNote">14 cards per Play Booster. Slot structure and replacement rates follow the open-source <b>Forge</b> project's TLA definition, which is based on the published play booster fact sheet. Special-version rates are approximate.</p>
         <div id="slotTable"></div>
       </div>
       <div class="panel">

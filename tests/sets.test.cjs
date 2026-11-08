@@ -104,6 +104,57 @@ const seededPacks = (page, seed, n, code) => page.evaluate(({ seed, n, code }) =
       await ctx.close();
     });
 
+    const opened = (page) => page.waitForFunction(() => ST && ST.cards && ST.cards.length > 0)
+      .then(() => page.evaluate(() => ST.cards.map((p) => cardKey(p.c))));
+
+    await group('the set picker opens the chosen set', async () => {
+      const { page, ctx } = await fresh();
+      assert.equal(await page.locator('[data-pick-set]').count(), 2);
+      await page.locator('[data-pick-set="TST"]').click();
+      assert.match(await page.locator('#pack').innerText(), /Test Set/);
+      await page.locator('#open1').click();
+      const keys = await opened(page);
+      assert.ok(keys.length === 6 && keys.every((k) => k.startsWith('TST:')), keys.join());
+      await page.reload();
+      assert.equal(await page.evaluate(() => S.settings.packSet), 'TST');
+      assert.match(await page.locator('#pack').innerText(), /Test Set/);
+      await ctx.close();
+    });
+
+    await group('an unknown packSet falls back', async () => {
+      const { page, ctx } = await fresh();
+      await page.evaluate(() => { S.settings.packSet = 'NOPE'; save(); });
+      await page.reload();
+      await page.evaluate(() => { S.settings.fast = true; });
+      assert.equal(await page.evaluate(() => packSet()), 'TLA');
+      await page.locator('#open1').click();
+      const keys = await opened(page);
+      assert.ok(keys.length === 14 && keys.every((k) => /^(TLA|TLE):/.test(k)), keys.join());
+      await ctx.close();
+    });
+
+    await group('one set looks like today', async () => {
+      const { page, ctx } = await fresh({ url: GAME_URL });
+      assert.equal(await page.locator('#setPick').isVisible(), false);
+      assert.match(await page.locator('header').innerText(), /Avatar: The Last Airbender \(TLA\) play booster simulator/);
+      assert.match(await page.locator('#pack').innerText(), /PLAY BOOSTER · 14 CARDS\s*The Last Airbender/);
+      await page.evaluate(() => showView('odds'));
+      assert.equal(await page.locator('#oddsSet').isVisible(), false);
+      await ctx.close();
+    });
+
+    await group('odds per set', async () => {
+      const { page, ctx } = await fresh();
+      await page.evaluate(() => showView('odds'));
+      assert.equal(await page.locator('#oddsSet').isVisible(), true);
+      await page.locator('#oddsSet').selectOption('TST');
+      assert.equal(await page.locator('#slotTable h3').count(), 4);
+      assert.match(await page.locator('#oddsNote').innerText(), /Fixture\./);
+      await page.locator('#oddsSet').selectOption('TLA');
+      assert.equal(await page.locator('#slotTable h3').count(), 7);
+      await ctx.close();
+    });
+
     assert.deepEqual(errors, []);
     console.log(`ALL SET-PACKAGE CHECKS PASSED (${groups} groups; no page errors)`);
   } finally {

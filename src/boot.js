@@ -3,7 +3,7 @@ Object.assign(DEFAULTS, {
   start: BBJ.ECONOMY.startingBankroll, price: BBJ.ECONOMY.packPrice, boxPrice: BBJ.ECONOMY.boxPrice,
   buy: BBJ.ECONOMY.sellRatePercent, keep: BBJ.ECONOMY.keepDefault, keepJourney: BBJ.ECONOMY.keepJourneyDefault
 });
-load(); initNameKeys(); refreshHeader(); imgStatus(); loadImgIndex();
+load(); initNameKeys(); refreshHeader(); renderPackHero(); imgStatus(); loadImgIndex();
 BBJ.initTips({isSeen:id=>!!(S.tips&&S.tips[id]), markSeen:id=>{ S.tips=Object.assign({},S.tips,{[id]:true}); save(); },
   reset:()=>{ S.tips={}; save(); }, enabled:()=>!BB_DEBUG||!!S.settings.debugTips});
 applyDebugVisibility(); renderGiftPanel(applyGifts()); renderResumeCard();

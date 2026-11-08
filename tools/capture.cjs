@@ -46,6 +46,10 @@ const out=process.argv[3]||path.join(env.OUTPUT,'screens');
   console.log('PHONE-OVERFLOW',await p2.evaluate(()=>document.documentElement.scrollWidth-innerWidth));await c2.close();}
  await page.setViewportSize({width:1440,height:1000});
  await page.evaluate(()=>{showView('journey');BBJ._newRun('VISUAL-NEUTRAL',{colours:['W','B'],theme:'neutral'});window.scrollTo(0,0)});await shot('27-neutral-map',3000);
+ {const multi=path.join(env.OUTPUT,'multiset.html');require('child_process').execFileSync(process.execPath,[path.join(env.ROOT,'tools/build.mjs'),'--with-set','tests/fixtures/sets/tst','--out',multi],{stdio:'ignore'});
+  for(const [w,h,name] of [[1440,1000,'28-multiset-home'],[390,844,'29-mobile-multiset-home']]){const c3=await browser.newContext({viewport:{width:w,height:h}}),p3=await c3.newPage();p3.on('pageerror',e=>errors.push(e.stack));
+   await p3.goto(pathToFileURL(multi).href);await p3.evaluate(()=>{S.settings.sound=false;S.settings.real=false});await p3.locator('[data-pick-set="TST"]').click();await p3.waitForTimeout(600);
+   await p3.screenshot({path:path.join(out,name+'.png'),fullPage:w<500,animations:'disabled'});console.log(name);await c3.close();}}
  console.log('INDEX',await page.evaluate(()=>({state:imgIndexState,images:Object.keys(IMG).length})));
  fs.writeFileSync(path.join(out,'errors.json'),JSON.stringify(errors,null,2));
  await browser.close();
