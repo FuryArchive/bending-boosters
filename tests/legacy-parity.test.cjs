@@ -78,3 +78,12 @@ test('every colour pair completes all three Books under the Avatar theme', () =>
     assert.ok(seen.events.every(id => id in avatar.events), p);
   }
 });
+
+test('a neutral run completes all three Acts', () => {
+  const run = neu.ctx.createRun({ seed: 'NEUTRAL-1', colours: ['W', 'B'], theme: 'neutral' });
+  const seen = autoplay(neu.ctx, run, { forceWin: true });
+  assert.equal(run.status, 'won');
+  assert.ok(seen.enemies.length > 0 && seen.enemies.every(id => id.startsWith('n_')), seen.enemies.join());
+  assert.ok(seen.events.every(id => id.startsWith('n_')), seen.events.join());
+  assert.ok(!seen.charms.some(id => neu.ctx.jokerById(id).kind === 'legend'));
+});
