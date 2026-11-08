@@ -961,7 +961,7 @@ export function mountJourney(root, legacy) {
     $("#jxIntent").title = "Enemies grow 15% stronger after every attack. Long fights get dangerous.";
     bd.setHeat(e.countdown <= 1 && hit > 0 ? Math.min(1, 0.35 + hit / Math.max(1, f.player.hp)) : 0.05);
     const hx = $("#jxHex");
-    if (hx) hx.innerHTML = (f.hex ? `<div class="jx-rule small hex">\u{1F300} This turn: ${L.esc(tt(hexText(f.hex)))}</div>` : "") + (f.taxed ? `<div class="jx-rule small hex">${f.taxed} cards cost +1</div>` : "");
+    if (hx) hx.innerHTML = (f.hex ? `<div class="jx-rule small hex">\u{1F300} This turn: ${L.esc(tt(hexText(f.hex)))}</div>` : "") + (f.taxed ? `<div class="jx-rule small hex">${L.esc(tt("{" + f.taxed + "} cards cost +1"))}</div>` : "");
   }
   function updatePlayer() {
     const f = st.f, p = f.player;

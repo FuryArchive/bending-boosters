@@ -110,6 +110,22 @@ const AVATAR_WORDS = /Avatar|Book|Water Tribe|Fire Nation|Earth Kingdom|Air Noma
       await ctx.close();
     });
 
+    await group('a taxed colour uses the theme name and is escaped', async () => {
+      const { page, ctx } = await fresh();
+      await page.evaluate(() => { showView('journey'); BBJ._newRun('TAX', { colours: ['W', 'B'], theme: 'neutral' }); BBJ._debugGoto('fight'); });
+      await page.waitForFunction(() => BBJ._state.screen === 'fight' && !BBJ._state.busy);
+      await page.evaluate(() => { BBJ._state.f.taxed = 'Fire'; });
+      await page.locator('#jxEnd').click();
+      await page.waitForFunction(() => BBJ._debugFight().turn === 2 && !BBJ._state.busy);
+      const hex = await page.locator('#jxHex').innerText();
+      assert.match(hex, /Red cards cost \+1/); assert.doesNotMatch(hex, /Fire/);
+      await page.evaluate(() => { BBJ._state.f.taxed = '<b id="taxx">Fire</b>'; });
+      await page.locator('#jxEnd').click();
+      await page.waitForFunction(() => BBJ._debugFight().turn === 3 && !BBJ._state.busy);
+      assert.equal(await page.evaluate(() => document.getElementById('taxx')), null);
+      await ctx.close();
+    });
+
     const bbRun = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('bb.run')));
     async function pickCharm(page) {
       await page.locator('[data-ci]').first().click();
