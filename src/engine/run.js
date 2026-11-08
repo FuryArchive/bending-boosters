@@ -7,7 +7,7 @@ import { NATIONS, NATION_COLOUR, starterDeck } from "./pools.js";
 import { normColours } from "./colours.js";
 import { isJourneySet, journeySets, themeForSets } from "./sets.js";
 import { RUN_SAVE_VERSION, migrateRun } from "../save/migrate.js";
-import { enemyForNode } from "../data/enemies.js";
+import { enemyForNode } from "./encounters.js";
 import { jokerById } from "../data/jokers.js";
 import { startCharms } from "./offers.js";
 import { makeReward, openNode } from "./nodes.js";
@@ -64,7 +64,7 @@ export function createRun({ seed, colours, sets, theme, nation, ownedKeys = [], 
     run.deck = starterDeck(cols, setCodes);
     run.nextUid = run.deck.length;
     if (startCharmId) run.jokers.push({ id: startCharmId, stars: 1 });
-    else run.pending = { kind: "start", charms: startCharms(rng).map((j) => j.id) };
+    else run.pending = { kind: "start", charms: startCharms(rng, run).map((j) => j.id) };
   });
   return run;
 }

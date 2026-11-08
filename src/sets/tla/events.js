@@ -1,11 +1,8 @@
-import { jokerById } from "./jokers.js";
-import { eligible } from "../engine/offers.js";
-import { OFFERING_SLOTS } from "./items.js";
+import { jokerById } from "../../data/jokers.js";
+import { OFFERING_SLOTS } from "../../data/items.js";
+import { TIER_RANK, eventJokerPool, needGold, needHp } from "../../engine/event-kit.js";
 
-var TIER_RANK = { common: 0, uncommon: 1, rare: 2, mythic: 3 };
-export var eventJokerPool = (run, minTier) => eligible(run, "elite", []).filter((j) => TIER_RANK[j.tier] >= TIER_RANK[minTier]);
-var needGold = (n) => (r) => r.gold >= n ? null : `Needs ${n} gold`;
-var needHp = (n) => (r) => r.hp > n ? null : `Needs more than ${n} HP`;
+// The Avatar theme's events.
 export var EVENTS = {
   library: {
     name: "Wan Shi Tong's Library",

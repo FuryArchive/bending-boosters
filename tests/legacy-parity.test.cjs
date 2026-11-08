@@ -65,3 +65,16 @@ test('a v2 save paused mid-fight resumes identically in the new build', () => {
   autoplay(neu.ctx, b, { onStep: r => assert.deepStrictEqual(strip(r), trail[i++], `step ${i}`) });
   assert.equal(i, trail.length);
 });
+
+test('every colour pair completes all three Books under the Avatar theme', () => {
+  const avatar = neu.ctx.themeById('avatar'), ids = new Set();
+  for (const b of [1, 2, 3]) for (const e of [...avatar.books[b].roster, ...avatar.books[b].elites, avatar.books[b].boss]) ids.add(e.id);
+  for (const p of neu.ctx.PAIRS) {
+    const run = neu.ctx.createRun({ seed: 'PAIR-' + p, colours: p.split('') });
+    const seen = autoplay(neu.ctx, run, { forceWin: true });
+    assert.equal(run.status, 'won', p);
+    for (const boss of ['zhao', 'azula_catacombs', 'ozai']) assert.ok(seen.enemies.includes(boss), p + ' ' + boss);
+    assert.ok(seen.enemies.every(id => ids.has(id)), p);
+    assert.ok(seen.events.every(id => id in avatar.events), p);
+  }
+});

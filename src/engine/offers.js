@@ -1,5 +1,6 @@
 import { cardByName, keyOf } from "./catalog.js";
 import { colourPool, offColourPool, runColours, runSets } from "./pools.js";
+import { themeOf } from "./themes.js";
 import { JOKERS, TIERS } from "../data/jokers.js";
 
 var JOKER_ODDS = { 1: [60, 30, 9, 1], 2: [40, 35, 20, 5], 3: [25, 35, 28, 12] };
@@ -20,9 +21,11 @@ function legendOwned(j, ownedKeys) {
   const c = cardByName(j.cardName);
   return !!c && ownedKeys.includes(keyOf(c));
 }
+// Theme charms (Legends) only appear under their theme; set charms only when the run has the set.
+export var charmFits = (j, run) => (!j.theme || j.theme === themeOf(run).id) && (!j.set || runSets(run).includes(j.set));
 export function eligible(run, source, exclude) {
   const held = /* @__PURE__ */ new Set([...(run.jokers || []).map((j) => j.id), ...exclude]);
-  return JOKERS.filter((j) => !held.has(j.id) && legendOwned(j, run.ownedKeys || []) && !(j.xmult && run.book <= 1) && !(source !== "shop" && j.tier === "common"));
+  return JOKERS.filter((j) => charmFits(j, run) && !held.has(j.id) && legendOwned(j, run.ownedKeys || []) && !(j.xmult && run.book <= 1) && !(source !== "shop" && j.tier === "common"));
 }
 function pickOne(run, source, rng, exclude, legendOnly) {
   let pool = eligible(run, source, exclude);
@@ -51,8 +54,8 @@ export function jokerOffers(run, source, rng) {
   }
   return out;
 }
-export function startCharms(rng) {
-  return rng.shuffle(JOKERS.filter((j) => j.kind === "charm" && j.tier === "common").slice()).slice(0, 3);
+export function startCharms(rng, run) {
+  return rng.shuffle(JOKERS.filter((j) => j.kind === "charm" && j.tier === "common" && charmFits(j, run)).slice()).slice(0, 3);
 }
 var OFF_ELEMENT = 0.1;
 export function cardOffers(run, n, rng) {

@@ -7,7 +7,7 @@ import { generateBook, nodeById } from "../engine/map.js";
 import { NATIONS } from "../engine/pools.js";
 import { jokerById, jokerProgress } from "../data/jokers.js";
 import { itemById } from "../data/items.js";
-import { EVENTS } from "../data/events.js";
+import { eventById } from "../engine/event-kit.js";
 import {
   MIN_DECK,
   applyEvent,
@@ -673,7 +673,7 @@ export function mountJourney(root, legacy) {
   };
   const nodeEvent = {
     html: (p) => {
-      const ev = EVENTS[p.id];
+      const ev = eventById(st.run, p.id);
       return `${sceneArt(p.id)}<h2>${L.esc(ev.name)}</h2><p class="jx-evtext">${L.esc(ev.text)}</p>
     ${p.result ? `<p class="jx-evresult">${L.esc(p.result)}</p>${continueBtn()}` : `<div class="jx-choices">${eventChoices(st.run).map((c, i) => `<button class="btn jx-choice" data-ch="${i}" ${c.ok ? "" : "disabled"}><kbd>${i + 1}</kbd><span>${L.esc(c.label)}${c.ok ? "" : `<span class="why">${L.esc(c.why)}</span>`}</span></button>`).join("")}</div>`}`;
     },

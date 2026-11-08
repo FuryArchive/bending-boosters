@@ -5,7 +5,8 @@ import { jokerById } from "../data/jokers.js";
 import { cardOffers, jokerOffers } from "./offers.js";
 import { runSets } from "./pools.js";
 import { OFFERINGS, OFFERING_SLOTS, itemById } from "../data/items.js";
-import { EVENTS, EVENT_IDS, eventJokerPool } from "../data/events.js";
+import { eventById, eventJokerPool } from "./event-kit.js";
+import { themeOf } from "./themes.js";
 
 var REMOVAL_BASE = 75;
 var REMOVAL_STEP = 25;
@@ -213,7 +214,7 @@ var H = {
   }
 };
 export function eventChoices(run) {
-  const ev = EVENTS[run.pending.id];
+  const ev = eventById(run, run.pending.id);
   return ev.choices.map((c) => {
     const why = c.req ? c.req(run) : null;
     return { label: c.label, ok: !why, why };
@@ -223,7 +224,7 @@ export function applyEvent(run, i) {
   const p = run.pending;
   if (!p || p.kind !== "event") throw new Error("no event");
   if (p.result) throw new Error("already chosen");
-  const c = EVENTS[p.id].choices[i];
+  const c = eventById(run, p.id).choices[i];
   if (!c) throw new Error("no such choice");
   const why = c.req ? c.req(run) : null;
   if (why) throw new Error(why);
@@ -287,8 +288,9 @@ export function openNode(run, node, rng) {
   }
   if (node.type === "event") {
     const seen = new Set(run.seenEvents || []);
-    let ids = EVENT_IDS.filter((id2) => !seen.has(id2));
-    if (!ids.length) ids = EVENT_IDS;
+    const all = Object.keys(themeOf(run).events);
+    let ids = all.filter((id2) => !seen.has(id2));
+    if (!ids.length) ids = all;
     const id = rng.pick(ids);
     run.seenEvents = [...seen, id];
     return { kind: "event", id, result: null };
