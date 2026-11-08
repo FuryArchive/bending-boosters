@@ -39,14 +39,13 @@ test('a v2 Journey run migrates to v3 colours, sets and theme, keeping everythin
 test('migrateRun is idempotent', () => {
   assert.deepEqual(migrateRun(migrateRun(v2run())), migrateRun(v2run()));
 });
-test('bad colours fall back to the nation, then to blue', () => {
-  assert.deepEqual(migrateRun({ v: 3, colours: ['X', 'Q'], nation: 'earth', sets: ['TLA'], theme: 'avatar' }).colours, ['G']);
-  assert.deepEqual(migrateRun({ v: 3, colours: ['X', 'Q'], sets: ['TLA'], theme: 'avatar' }).colours, ['U']);
-  assert.deepEqual(migrateRun({ v: 3, colours: ['W', 'U', 'B'], sets: ['TLA'], theme: 'avatar' }).colours, ['U']);
+test('a v3 save keeps colours and sets this build does not know', () => {
+  const r = migrateRun({ v: 3, colours: ['W', 'U', 'B'], sets: ['TMT', 'TLA'], theme: 'tmt' });
+  assert.deepEqual([r.colours, r.sets, r.theme], [['W', 'U', 'B'], ['TMT', 'TLA'], 'tmt']);
 });
-test('unknown sets are dropped; none left means every Journey set', () => {
-  assert.deepEqual(migrateRun({ v: 3, colours: ['U'], sets: ['TMT', 'TLA'], theme: 'avatar' }).sets, ['TLA']);
-  assert.deepEqual(migrateRun({ v: 3, colours: ['U'], sets: ['NOPE'], theme: 'avatar' }).sets, ['TLA']);
+test('missing v3 fields are filled in', () => {
+  const r = migrateRun({ v: 3, nation: 'earth' });
+  assert.deepEqual([r.colours, r.sets, r.theme], [['G'], ['TLA'], 'avatar']);
 });
 test('an unknown theme and a newer version are kept as they are', () => {
   const r = migrateRun({ v: 4, colours: ['U', 'R'], sets: ['TLA'], theme: 'tmt' });

@@ -113,7 +113,7 @@ export function mountJourney(root, legacy) {
     return it && { ...it, name: T().names.offering[it.id] || it.name, text: tt(it.text) };
   };
   const runSurge = () => {
-    const m = mechanicsFor(st.run ? st.run.sets : void 0).find((x) => x.surge);
+    const m = mechanicsFor(st.run ? runSets(st.run) : void 0).find((x) => x.surge);
     return m ? m.surge : null;
   };
   const flowHint = () => {

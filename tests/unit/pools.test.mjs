@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { COLOUR_ELEMENT, PAIRS, cardColours } from '../../src/engine/colours.js';
 import { isRunCard, keyOf, setCatalog } from '../../src/engine/catalog.js';
-import { colourPool, offColourPool, starterDeck } from '../../src/engine/pools.js';
+import { colourPool, offColourPool, runColours, runSets, starterDeck } from '../../src/engine/pools.js';
 import { cardOffers } from '../../src/engine/offers.js';
 import { createRng } from '../../src/engine/rng.js';
 
@@ -36,4 +36,15 @@ test('pair offers never show an unowned uncommon or better', () => {
   const run = { colours: ['W', 'B'], sets: ['TLA'], book: 3, ownedKeys: [], ownedStars: {} };
   const rng = createRng('OFFERS');
   for (let i = 0; i < 100; i++) for (const c of cardOffers(run, 3, rng)) assert.equal(c.r, 'C');
+});
+test('a run\'s colours resolve when read: bad ones fall back to the nation, then to blue', () => {
+  assert.deepEqual(runColours({ colours: ['R', 'U'] }), ['U', 'R']);
+  assert.deepEqual(runColours({ colours: ['X', 'Q'], nation: 'earth' }), ['G']);
+  assert.deepEqual(runColours({ colours: ['X', 'Q'] }), ['U']);
+  assert.deepEqual(runColours({ colours: ['W', 'U', 'B'] }), ['U']);
+});
+test('a run\'s sets resolve when read: unknown ones are skipped; none left means every Journey set', () => {
+  assert.deepEqual(runSets({ sets: ['TMT', 'TLA'] }), ['TLA']);
+  assert.deepEqual(runSets({ sets: ['NOPE'] }), ['TLA']);
+  assert.deepEqual(runSets({}), ['TLA']);
 });

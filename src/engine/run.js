@@ -3,7 +3,7 @@ import { createFight, endTurn, playCard } from "./flow.js";
 import { mechanicsFor } from "./mechanics.js";
 import { createRng, hashStr, withRng } from "./rng.js";
 import { generateBook, nodeById, startNodes } from "./map.js";
-import { NATIONS, NATION_COLOUR, starterDeck } from "./pools.js";
+import { NATIONS, NATION_COLOUR, runSets, starterDeck } from "./pools.js";
 import { normColours } from "./colours.js";
 import { isJourneySet, journeySets, themeForSets } from "./sets.js";
 import { RUN_SAVE_VERSION, migrateRun } from "../save/migrate.js";
@@ -106,7 +106,7 @@ export function enterNode(run, id) {
         rng: createRng(rng.int(2 ** 31)),
         rule: enemy.rule || null,
         elementCounts: run.stats.elementCounts,
-        sets: run.sets
+        sets: runSets(run)
       });
       run.fight.enemy.maxHp = Math.max(run.fight.enemy.maxHp, run.fight.enemy.hp);
       run.status = "fight";
@@ -221,7 +221,7 @@ export function deserialize(str) {
     f.jokers = liveJokers(run);
     f.jstate = run.jstate;
     f.opts = jokerOpts(f.jokers);
-    f.mech = mechanicsFor(run.sets);
+    f.mech = mechanicsFor(runSets(run));
     f.log = [];
   }
   return run;

@@ -2,7 +2,8 @@ import '../../src/content.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { createRun, payout, runBrief, abandonRun, serialize, deserialize } from '../../src/engine/run.js';
+import { createRun, payout, runBrief, abandonRun, serialize, deserialize, availableNodes, enterNode } from '../../src/engine/run.js';
+import { surgeOf } from '../../src/engine/mechanics.js';
 import { setCatalog } from '../../src/engine/catalog.js';
 
 setCatalog(JSON.parse(fs.readFileSync(new URL('../../src/catalog/data.json', import.meta.url), 'utf8')).base);
@@ -52,4 +53,14 @@ test('a v2 save deserialises as v3', () => {
   old.v = 2;
   const r = deserialize(JSON.stringify(old));
   assert.equal(r.v, 3); assert.deepEqual(r.colours, ['W']); assert.equal(r.theme, 'avatar');
+});
+test('a run from a newer build keeps its other sets through a load and save, and still fights with TLA', () => {
+  const r = createRun({ seed: 'NEWER', colours: ['U', 'R'], startCharmId: 'pai_sho_pro' });
+  const fight = r.maps[1].floors.flat().find(n => n.type === 'fight' && availableNodes(r).some(a => a.id === n.id));
+  enterNode(r, fight.id);
+  r.sets = ['TMT', 'TLA'];
+  const back = deserialize(serialize(r));
+  assert.deepEqual(back.sets, ['TMT', 'TLA']);
+  assert.deepEqual(JSON.parse(serialize(back)).sets, ['TMT', 'TLA']);
+  assert.ok(surgeOf(back.fight), 'TLA mechanics are reattached');
 });

@@ -1,7 +1,7 @@
 import { basicCard, toRunCard } from "./cards.js";
 import { catalog, isRunCard } from "./catalog.js";
-import { COLOURS, cardColours } from "./colours.js";
-import { journeySets } from "./sets.js";
+import { COLOURS, cardColours, normColours } from "./colours.js";
+import { isJourneySet, journeySets } from "./sets.js";
 
 export var NATIONS = [
   { id: "water", name: "Water Tribe", element: "Water", col: "U" },
@@ -11,8 +11,16 @@ export var NATIONS = [
 ];
 // Legacy nation ids, kept for runs saved before colours and for createRun({ nation }).
 export var NATION_COLOUR = { water: "U", earth: "G", fire: "R", air: "W" };
-export var runColours = (run) => run.colours && run.colours.length ? run.colours : [NATION_COLOUR[run.nation] || "U"];
-export var runSets = (run) => run.sets && run.sets.length ? run.sets : journeySets().map((s) => s.code);
+// A run's colours and sets, resolved when read. A save from a newer build may name colours or
+// sets this build doesn't know: they stay in the save, and the run plays with what is known.
+export function runColours(run) {
+  const c = normColours(run.colours);
+  return c.length >= 1 && c.length <= 2 ? c : [NATION_COLOUR[run.nation] || "U"];
+}
+export function runSets(run) {
+  const s = [...new Set(Array.isArray(run.sets) ? run.sets : [])].filter(isJourneySet);
+  return s.length ? s : journeySets().map((x) => x.code);
+}
 var inSets = (c, sets) => isRunCard(c) && sets.includes(c.set);
 // The run's own cards. A single (legacy) colour keeps the original rule: any card that has
 // the colour. A pair takes cards whose colours all lie inside it. Colourless cards count.
