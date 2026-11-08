@@ -37,7 +37,7 @@ npm test               # build + module check + all test suites (needs Chromium)
 
 `npm run build` and `node tools/build.mjs` need nothing but Node 18+. The build never touches the copy on your Desktop. To ship a change, copy `dist/bending-boosters.html` over the Desktop copy yourself.
 
-Saves live in the browser's `localStorage` under the keys `bendingBoosters.v1` (wallet, collection, settings), `bb.run` (the active Journey run), `bb.prices` and `bb.imgidx` (caches). They are unchanged from the shipped game. Depending on the browser, opening the game from a different file path can mean starting from a separate save.
+Saves live in the browser's `localStorage` under the keys `bendingBoosters.v1` (wallet, collection, settings), `bb.run` (the active Journey run), `bb.prices` and `bb.imgidx` (caches). They are unchanged from the shipped game. The Journey run is saved as version 3 (`colours`, `sets`, `theme`); a version 2 run from an older build migrates when it loads, and the original is kept in `bb.backup.run-v2`. Depending on the browser, opening the game from a different file path can mean starting from a separate save.
 
 ## Layout
 

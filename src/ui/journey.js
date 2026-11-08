@@ -56,7 +56,7 @@ import {
   titleCard,
   wipe,
 } from "./fx.js";
-import { RUN_KEY } from "./run-store.js";
+import { RUN_KEY, backupLegacyRun } from "./run-store.js";
 import { showTip } from "./tips.js";
 
 var ELEM_COLOR = { Air: "#f2c46d", Water: "#5aa7e0", Fire: "#e8543a", Earth: "#6fa356", Spirit: "#9a7bd1", Neutral: "#b9ab95" };
@@ -134,6 +134,7 @@ export function mountJourney(root, legacy) {
   function loadSave() {
     try {
       const s = localStorage.getItem(RUN_KEY);
+      if (s) backupLegacyRun(s);
       const run = s ? deserialize(s) : null;
       if (run && (run.epoch || null) !== (S.runEpoch || null)) {
         clearSave(); // An earlier reset already invalidated this stale second key.

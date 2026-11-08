@@ -38,3 +38,30 @@ for (const nation of ['water', 'earth', 'fire', 'air']) {
     }
   });
 }
+
+const { autoplay } = require('./harness/autoplay.cjs');
+const strip = r => { const o = JSON.parse(neu.ctx.serialize(r)); for (const k of ['v', 'colours', 'sets', 'theme']) delete o[k]; return o; };
+const stripOld = r => { const o = JSON.parse(old.ctx.serialize(r)); delete o.v; return o; };
+for (const nation of ['water', 'earth', 'fire', 'air']) for (const forceWin of [false, true]) {
+  test(`a legacy ${nation} run plays the same as the shipped build${forceWin ? ' (all three Books)' : ''}`, () => {
+    const args = { seed: `PARITY-${nation}`, nation, ownedKeys: [], ownedStars: {} };
+    const a = old.ctx.createRun(args), b = neu.ctx.createRun(args), trail = [];
+    autoplay(old.ctx, a, { forceWin, onStep: r => trail.push(stripOld(r)) });
+    let i = 0;
+    autoplay(neu.ctx, b, { forceWin, onStep: r => assert.deepStrictEqual(strip(r), trail[i++], `step ${i}`) });
+    assert.equal(i, trail.length);
+    if (forceWin) assert.equal(b.status, 'won');
+  });
+}
+test('a v2 save paused mid-fight resumes identically in the new build', () => {
+  const a = old.ctx.createRun({ seed: 'PARITY-MIDFIGHT', nation: 'fire', ownedKeys: [], ownedStars: {} });
+  autoplay(old.ctx, a, { until: r => r.fight && r.fight.turn >= 2 && r.fight.chain.length > 0 });
+  assert.ok(a.fight, 'paused in a fight');
+  const b = neu.ctx.deserialize(old.ctx.serialize(a));
+  assert.equal(b.v, 3); assert.deepStrictEqual(plain(b.colours), ['R']);
+  const trail = [];
+  autoplay(old.ctx, a, { onStep: r => trail.push(stripOld(r)) });
+  let i = 0;
+  autoplay(neu.ctx, b, { onStep: r => assert.deepStrictEqual(strip(r), trail[i++], `step ${i}`) });
+  assert.equal(i, trail.length);
+});

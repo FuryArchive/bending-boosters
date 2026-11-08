@@ -3,7 +3,10 @@ import { createFight, endTurn, playCard } from "./flow.js";
 import { mechanicsFor } from "./mechanics.js";
 import { createRng, hashStr, withRng } from "./rng.js";
 import { generateBook, nodeById, startNodes } from "./map.js";
-import { runColours, runSets, starterDeck } from "./pools.js";
+import { NATIONS, NATION_COLOUR, starterDeck } from "./pools.js";
+import { normColours } from "./colours.js";
+import { isJourneySet, journeySets, themeForSets } from "./sets.js";
+import { RUN_SAVE_VERSION, migrateRun } from "../save/migrate.js";
 import { enemyForNode } from "../data/enemies.js";
 import { jokerById } from "../data/jokers.js";
 import { startCharms } from "./offers.js";
@@ -12,11 +15,17 @@ import { ECONOMY } from "../economy/config.js";
 
 var START_HP = 60;
 var START_GOLD = 20;
-var SAVE_VERSION = 2;
+var SAVE_VERSION = RUN_SAVE_VERSION;
 var GOLD = { fight: [12, 18], elite: [30, 40], boss: [60, 60] };
 var PAYOUT = ECONOMY.journeyPayout;
 var liveJokers = (run) => run.jokers.map((j) => ({ ...jokerById(j.id), stars: j.stars || 1 }));
-export function createRun({ seed, nation = "water", ownedKeys = [], ownedStars = {}, startCharmId }) {
+// A run is a colour pair from one or more Journey sets. One colour is only for legacy runs
+// and tests; `nation` is the old name for it ("water" is blue).
+export function createRun({ seed, colours, sets, theme, nation, ownedKeys = [], ownedStars = {}, startCharmId }) {
+  const cols = colours ? normColours(colours) : [NATION_COLOUR[nation || "water"] || "U"];
+  if (cols.length < 1 || cols.length > 2 || colours && cols.length !== colours.length) throw new Error("A run needs one or two colours");
+  const setCodes = sets ? [...new Set(sets)].filter(isJourneySet) : journeySets().map((s) => s.code);
+  if (!setCodes.length) throw new Error("A run needs at least one Journey set");
   const run = {
     v: SAVE_VERSION,
     seed: String(seed),
@@ -34,7 +43,7 @@ export function createRun({ seed, nation = "water", ownedKeys = [], ownedStars =
     jstate: {},
     ownedKeys: [...ownedKeys],
     ownedStars: { ...ownedStars },
-    nation,
+    nation: nation || (NATIONS.find((n) => n.col === cols[0]) || {}).id,
     stats: { fights: 0, elites: 0, bosses: 0, bestHit: 0, avatar: 0, plays: 0, turns: 0, peakFlow: 0, elementCounts: {} },
     removals: 0,
     rerolls: 0,
@@ -44,11 +53,15 @@ export function createRun({ seed, nation = "water", ownedKeys = [], ownedStars =
     status: "map",
     goldMult: 1,
     skip: 0,
-    trample: 0
+    trample: 0,
+    colours: cols,
+    sets: setCodes,
+    theme: theme || themeForSets(setCodes)
   };
+  if (cols.length > 1 || !run.nation) delete run.nation;
   withRng(run, (rng) => {
     run.maps[1] = generateBook(1, rng);
-    run.deck = starterDeck(runColours({ nation }), runSets({}));
+    run.deck = starterDeck(cols, setCodes);
     run.nextUid = run.deck.length;
     if (startCharmId) run.jokers.push({ id: startCharmId, stars: 1 });
     else run.pending = { kind: "start", charms: startCharms(rng).map((j) => j.id) };
@@ -195,7 +208,8 @@ export function serialize(run) {
 }
 export function deserialize(str) {
   const run = JSON.parse(str);
-  if (!run || (run.v || 1) < SAVE_VERSION) return null;
+  if (!run || typeof run !== "object" || (run.v || 1) < 2) return null;
+  migrateRun(run);
   if (run.fight) {
     const f = run.fight, byUid = new Map(run.deck.map((c) => [c.uid, c]));
     const remap = (arr) => (arr || []).map((c) => byUid.get(c.uid) || c);

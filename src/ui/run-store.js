@@ -12,3 +12,15 @@ export function readSavedRun(epoch) {
     return null;
   }
 }
+// The last v2 run seen, kept before this build rewrites it as v3.
+export var RUN_BACKUP_KEY = "bb.backup.run-v2";
+export function backupLegacyRun(raw) {
+  try {
+    const r = JSON.parse(raw);
+    if (!r || r.v !== 2) return false;
+    localStorage.setItem(RUN_BACKUP_KEY, raw);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
