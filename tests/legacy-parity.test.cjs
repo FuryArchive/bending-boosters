@@ -87,3 +87,13 @@ test('a neutral run completes all three Acts', () => {
   assert.ok(seen.events.every(id => id.startsWith('n_')), seen.events.join());
   assert.ok(!seen.charms.some(id => neu.ctx.jokerById(id).kind === 'legend'));
 });
+
+test('charm, offering and hex texts read exactly as shipped under the Avatar theme', () => {
+  const avatar = neu.ctx.themeById('avatar'), tt = s => neu.ctx.themeText(avatar, s);
+  for (const j of old.ctx.JOKERS) assert.equal(tt(neu.ctx.jokerById(j.id).text), j.text, j.id);
+  for (const o of old.ctx.OFFERINGS) assert.equal(tt(neu.ctx.itemById(o.id).text), o.text, o.id);
+  old.ctx.HEXES.forEach((h, i) => {
+    assert.deepStrictEqual(plain(neu.ctx.HEXES[i]), plain(h), h.id); // saved inside fights: unchanged
+    assert.equal(tt(neu.ctx.hexText(h)), h.text, h.id);
+  });
+});

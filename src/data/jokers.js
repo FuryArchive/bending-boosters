@@ -31,7 +31,7 @@ export var JOKERS = [
     tier: "common",
     price: 12,
     name: "Element Focus",
-    text: "Same-element chains give +1 more Flow",
+    text: "Same-{element} chains give +1 more Flow",
     onChain: (c, m, ctx, f, x) => x.same ? { flow: 1 } : null
   },
   {
@@ -108,7 +108,7 @@ export var JOKERS = [
     tier: "uncommon",
     price: 19,
     name: "Two Elements",
-    text: "Switching between two different elements gives +1 Flow",
+    text: "Switching between two different {element}s gives +1 Flow",
     onChain: (c, m, ctx, f, x) => ctx.prev && !x.same && ctx.prev.el.some((e) => e !== "Neutral") && x.els.some((e) => e !== "Neutral") ? { flow: 1 } : null
   },
   {
@@ -117,7 +117,7 @@ export var JOKERS = [
     tier: "uncommon",
     price: 18,
     name: "Glider Staff",
-    text: "Air Guards +4; Gusts also give 2 Block",
+    text: "{Air} Guards +4; Gusts also give 2 Block",
     onCard: (c, m, ctx, f, x) => isGust(c) ? { block: 2 } : m === "guard" && has2(c, "Air", x) ? { guard: 4 } : null
   },
   {
@@ -126,7 +126,7 @@ export var JOKERS = [
     tier: "rare",
     price: 26,
     name: "Spirit Lens",
-    text: "Spirit cards resolve at +3 Flow",
+    text: "{Spirit} cards resolve at +3 Flow",
     onCard: (c, m, ctx, f, x) => has2(c, "Spirit", x) ? { flowNow: 3 } : null
   },
   {
@@ -152,7 +152,7 @@ export var JOKERS = [
     price: 36,
     xmult: true,
     name: "Cosmic Fire",
-    text: "At Flow 8+, Fire Strikes hit twice",
+    text: "At Flow 8+, {Fire} Strikes hit twice",
     onCard: (c, m, ctx, f, x) => m === "strike" && has2(c, "Fire", x) && ctx.flow >= 8 ? { hits: 1, raw: true } : null
   },
 ];

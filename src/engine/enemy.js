@@ -10,6 +10,9 @@ var HEXES = [
   { id: "cost_up_fire", text: "Fire cards cost +1 this turn" },
   { id: "draw_less", text: "Draw 1 fewer card this turn" }
 ];
+// What the player reads for each hex, with theme tokens. HEXES' own text is what saves hold.
+export var HEX_TEXT = { cost_up_water: "{Water} cards cost +1 this turn", cost_up_fire: "{Fire} cards cost +1 this turn", draw_less: "Draw 1 fewer card this turn" };
+export var hexText = (hex) => HEX_TEXT[hex.id] || hex.text;
 var DAMAGING = /* @__PURE__ */ new Set(["strike", "charge", "lightning", "flurry"]);
 export function makeEnemyState(def) {
   const e = {

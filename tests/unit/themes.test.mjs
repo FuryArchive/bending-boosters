@@ -2,7 +2,7 @@ import '../../src/content.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { registerTheme, themeById, themeOf } from '../../src/engine/themes.js';
+import { bookLabel, registerTheme, themeById, themeOf, themeText } from '../../src/engine/themes.js';
 import { registerSet } from '../../src/engine/sets.js';
 import { eligible } from '../../src/engine/offers.js';
 import { JOKERS } from '../../src/data/jokers.js';
@@ -42,4 +42,19 @@ test('Legends belong to the Avatar theme; Lesson Scroll needs TLA', () => {
 test('an event this build does not know offers a safe way on', () => {
   assert.equal(eventById({ theme: 'avatar' }, 'n_nope'), MISSING_EVENT);
   assert.equal(eventById({ theme: 'avatar' }, 'cabbage').name, 'Cabbage Merchant');
+});
+test('theme text fills colour, element and Book tokens', () => {
+  const avatar = themeById('avatar'), neutral = themeById('neutral');
+  assert.equal(themeText(avatar, '{Air} Guards +4'), 'Air Guards +4');
+  assert.equal(themeText(neutral, '{Air} Guards +4'), 'White Guards +4');
+  assert.equal(themeText(avatar, 'Same-{element} chains'), 'Same-element chains');
+  assert.equal(themeText(neutral, 'Same-{element} chains'), 'Same-colour chains');
+  assert.equal(themeText(neutral, 'The {book}\'s boss of three {books}'), 'The Act\'s boss of three Acts');
+  assert.equal(themeText(avatar, '{Foo} stays'), '{Foo} stays');
+});
+test('bookLabel names the Book from theme data only', () => {
+  assert.equal(bookLabel({ theme: 'neutral', book: 2 }), 'Act 2');
+  assert.equal(bookLabel({ book: 3 }), 'Book 3');
+  assert.equal(bookLabel({ book: '<img>' }), 'Book 1');
+  assert.equal(bookLabel({ theme: 'avatar', book: 9 }), 'Book 3');
 });

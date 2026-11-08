@@ -28,14 +28,14 @@ var TAG_NAME = {
   haunt: "Haunt",
   any: ""
 };
-export var tagName = (t) => TAG_NAME[t] ?? t;
+export var tagName = (t, theme) => theme && theme.names && theme.names.tag[t] || (TAG_NAME[t] ?? t);
 export function journeyCardHTML(rc, opts) {
   const els = rc.elements, multi = els.length > 1;
   const [fr, light, ink] = ELEM_FRAME[multi ? "Air" : els[0]] || ELEM_FRAME.Neutral;
   const frame = multi ? `linear-gradient(135deg,${els.map((e) => (ELEM_FRAME[e] || ELEM_FRAME.Neutral)[0]).join(",")})` : fr;
   const lines = effectLines(rc), base = cardStats(rc), live = opts.live || {};
   const s = live.strike ?? base.strike, g = live.guard ?? base.guard;
-  const tags = rc.tags.map(tagName).filter(Boolean).join(" \xB7 ");
+  const tags = rc.tags.map((t) => tagName(t, opts.theme)).filter(Boolean).join(" \xB7 ");
   const gem = rc.hpCost ? `<span class="jc-cost hp" title="Costs ${rc.hpCost} HP instead of energy">\u2665${rc.hpCost}</span>` : `<span class="jc-cost" title="Energy cost">${rc.energy}</span>`;
   const stats = s || g ? `${s ? `<span class="jc-strike${live.strike != null ? " live" : ""}" title="Damage when played as a Strike, before Flow"><b>${s}</b>Strike</span>` : ""}${g ? `<span class="jc-guard${live.guard != null ? " live" : ""}" title="Block when played as a Guard, before Flow"><b>${g}</b>Guard</span>` : ""}` : `<span class="jc-play" title="Play it for its effect">${rc.role === "power" ? "Power" : "Play"}</span>`;
   return `<div class="jc${multi ? " multi" : ""} rar-${opts.rarity || "C"}${rc.upgraded ? " up" : ""}" style="--jf:${frame};--jl:${light};--ji:${ink};--jr:${opts.rarityColor || "#1b1b1b"}">

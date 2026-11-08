@@ -184,7 +184,7 @@ export function createBackdrop(visible, isReduced) {
   function paint(dt){
     time+=dt;ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.clearRect(0,0,W,H2);ctx.drawImage(scene,0,0,W,H2);
     if(!isReduced()){
-      for(const p of motes){const x=p.x*W+Math.sin(time*.00012+p.phase)*18,y=((p.y*H2-time*.004*(theme===3?2:1))%H2+H2)%H2;const edge=Math.abs(x/W-.5)*2;ctx.globalAlpha=.06+edge*.17;ctx.fillStyle=T.mote;ctx.beginPath();ctx.arc(x,y,p.r,0,Math.PI*2);ctx.fill()}
+      for(const p of motes){const x=p.x*W+Math.sin(time*.00012+p.phase)*18,y=((p.y*H2-time*.004*(T.drift||(theme===3?2:1)))%H2+H2)%H2;const edge=Math.abs(x/W-.5)*2;ctx.globalAlpha=.06+edge*.17;ctx.fillStyle=T.mote;ctx.beginPath();ctx.arc(x,y,p.r,0,Math.PI*2);ctx.fill()}
       for(const r of rings){r.radius+=dt*.65;r.alpha-=dt*.00065;ctx.globalAlpha=Math.max(0,r.alpha)*.35;ctx.strokeStyle=r.color;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(r.x,r.y,r.radius,0,Math.PI*2);ctx.stroke()}
       rings=rings.filter(r=>r.alpha>0);
     }
@@ -195,7 +195,7 @@ export function createBackdrop(visible, isReduced) {
   window.addEventListener('resize',resize);resize();
   if(isReduced()){cv.classList.toggle('on',visible());timer=setInterval(()=>cv.classList.toggle('on',visible()),250)}else raf=requestAnimationFrame(loop);
   return {
-    setTheme(key){const k=THEMES[key]?(/^\d$/.test(String(key))?+key:key):'none';if(k===theme)return;theme=k;T=THEMES[k];rings=[];landscape();paint(0)},
+    setTheme(key,palette){const k=palette?key:THEMES[key]?(/^\d$/.test(String(key))?+key:key):'none';if(k===theme)return;theme=k;T=palette||THEMES[k];rings=[];landscape();paint(0)},
     pulse(color='#fff',power=1,x=W/2,y=H2/2){if(isReduced())return;rings.push({x,y,radius:8,alpha:Math.min(.6,.2+power*.2),color});if(rings.length>4)rings.shift()},
     setHeat(v){heat=Math.max(0,Math.min(1,v));if(isReduced())paint(0)},
     destroy(){cancelAnimationFrame(raf);clearInterval(timer);window.removeEventListener('resize',resize);cv.remove()}

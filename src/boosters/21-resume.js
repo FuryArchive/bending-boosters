@@ -5,7 +5,7 @@ function renderResumeCard(){
   const run=BBJ.readSavedRun(S.runEpoch);
   if(!run||!['map','node','fight'].includes(run.status)){ el.hidden=true; el.innerHTML=''; return; }
   const b=BBJ.runBrief(run);
-  el.innerHTML=`<div class="grow"><b>Run in progress</b> · Book ${b.book}, floor ${b.floor} · ${b.hp}/${b.maxHp} HP · ${b.deck} cards</div><button class="btn primary" id="resumeGo">Resume run</button>`;
+  el.innerHTML=`<div class="grow"><b>Run in progress</b> · ${esc(BBJ.bookLabel(run))}, floor ${b.floor} · ${b.hp}/${b.maxHp} HP · ${b.deck} cards</div><button class="btn primary" id="resumeGo">Resume run</button>`;
   el.hidden=false;
   document.getElementById('resumeGo').onclick=()=>{
     showView('journey');

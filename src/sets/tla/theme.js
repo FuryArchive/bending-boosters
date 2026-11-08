@@ -41,6 +41,6 @@ export var AVATAR_THEME = {
     yuyan: "archer", sand_raider: "archer",
     zhao: "boss", azula_catacombs: "boss", ozai: "boss"
   },
-  text: { book: "Book", books: "Books", element: "element", surge: "Avatar State", surgeHint: "All four bending elements in one turn" },
+  text: { book: "Book", books: "Books", element: "element", surge: "Avatar State", surgeHint: "All four bending elements in one turn", victory: "The Phoenix King falls" },
   names: { charm: {}, offering: {}, tag: { team: "Team Avatar" } }
 };

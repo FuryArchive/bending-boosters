@@ -1,10 +1,14 @@
 import { DECK_TYPES, starsFromCopies, strikeValue, toRunCard } from "../engine/cards.js";
-import { intentHit, pendingCopyBonus } from "../engine/enemy.js";
+import { hexText, intentHit, pendingCopyBonus } from "../engine/enemy.js";
 import { canPlayCard, incomingDamage, modesFor, previewCard } from "../engine/flow.js";
 import { cardByKey, isRunCard, keyOf, setCatalog } from "../engine/catalog.js";
 import { createRng } from "../engine/rng.js";
 import { generateBook, nodeById } from "../engine/map.js";
-import { NATIONS } from "../engine/pools.js";
+import { NATIONS, runColours } from "../engine/pools.js";
+import { COLOUR_ELEMENT } from "../engine/colours.js";
+import { mechanicsFor } from "../engine/mechanics.js";
+import { journeySets, themeForSets } from "../engine/sets.js";
+import { themeById, themeOf, themeText } from "../engine/themes.js";
 import { jokerById, jokerProgress } from "../data/jokers.js";
 import { itemById } from "../data/items.js";
 import { eventById } from "../engine/event-kit.js";
@@ -59,7 +63,6 @@ import {
 import { RUN_KEY, backupLegacyRun } from "./run-store.js";
 import { showTip } from "./tips.js";
 
-var ELEM_COLOR = { Air: "#f2c46d", Water: "#5aa7e0", Fire: "#e8543a", Earth: "#6fa356", Spirit: "#9a7bd1", Neutral: "#b9ab95" };
 var GLYPH = {
   Air: '<path d="M4 9c3-4 9-4 11 0-2-2-6-2-7 1s3 4 5 2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
   Water: '<path d="M10 2C7 7 5 9.5 5 12.5a5 5 0 0 0 10 0C15 9.5 13 7 10 2z" fill="currentColor"/>',
@@ -68,12 +71,6 @@ var GLYPH = {
   Spirit: '<path d="M13 3a7 7 0 1 0 4 12A6 6 0 0 1 13 3z" fill="currentColor"/>',
   Neutral: '<path d="M10 3l6 7-6 7-6-7z" fill="currentColor"/>'
 };
-var glyph = (e, s = 18) => `<svg class="jg" viewBox="0 0 20 20" width="${s}" height="${s}" style="color:${ELEM_COLOR[e]}">${GLYPH[e]}</svg>`;
-var BOOK_INFO = {
-  1: { kicker: "Book One", name: "Water", el: "Water", places: "Southern Water Tribe, Kyoshi Island, Northern Water Tribe", boss: "Admiral Zhao" },
-  2: { kicker: "Book Two", name: "Earth", el: "Earth", places: "Omashu, the Si Wong Desert, Ba Sing Se", boss: "Azula" },
-  3: { kicker: "Book Three", name: "Fire", el: "Fire", places: "The Fire Nation islands, the Boiling Rock, Sozin's Comet", boss: "Phoenix King Ozai" }
-};
 var NODE_DESC = {
   fight: "An enemy. Win gold and pick a card.",
   elite: "A tougher enemy. Win more gold, +5 max HP, a Legend or Charm and a card.",
@@ -81,11 +78,11 @@ var NODE_DESC = {
   rest: "Heal 30% of your max HP, upgrade a card or train it.",
   event: "A story moment with a choice to make.",
   treasure: "Open a booster and keep 1 of 3 cards.",
-  boss: "The Book's boss, with its own rules. Win to move on."
+  boss: "The {book}'s boss, with its own rules. Win to move on."
 };
 var COIN = '<i class="jx-coinico" aria-hidden="true"></i>';
 var NODE_ICON = { fight: "\u2694", elite: "\u{1F480}", shop: "\u{1F6D2}", rest: "\u{1F525}", event: "\u2753", treasure: "\u{1F4E6}", boss: "\u{1F451}" };
-var NODE_NAME = { fight: "Fight", elite: "Elite", shop: "Shop", rest: "Rest site", event: "Event", treasure: "Treasure", boss: "Book boss" };
+var NODE_NAME = { fight: "Fight", elite: "Elite", shop: "Shop", rest: "Rest site", event: "Event", treasure: "Treasure", boss: "{book} boss" };
 var TIER_COLOR = { common: "#b9ab95", uncommon: "#9cc6e8", rare: "#e8c25a", mythic: "#f07a3a" };
 export function mountJourney(root, legacy) {
   const L = legacy;
@@ -98,6 +95,30 @@ export function mountJourney(root, legacy) {
     byKey[c.set + ":" + c.num] = c;
   });
   const st = { screen: "start", nation: null, run: null, f: null, focus: null, busy: false, speed: S.settings.jspeed || 1, introSeen: null };
+  // Everything the player reads comes from the run's theme (before a run: the theme a new run gets).
+  const startTheme = () => themeById(themeForSets(journeySets().map((x) => x.code)));
+  const T = () => st.run ? themeOf(st.run) : startTheme();
+  const tt = (text) => themeText(T(), text);
+  const elHex = (e) => (T().colours[e] || T().colours.Neutral).hex;
+  const glyph = (e, s = 18) => `<svg class="jg" viewBox="0 0 20 20" width="${s}" height="${s}" style="color:${elHex(e)}">${GLYPH[e] || GLYPH.Neutral}</svg>`;
+  const bookOf = (b) => T().books[Math.min(3, Math.max(1, +b || 1))];
+  const charmOf = (id) => {
+    const j = jokerById(id);
+    return j && { ...j, name: T().names.charm[j.id] || j.name, text: tt(j.text) };
+  };
+  const itemOf = (id) => {
+    const it = itemById(id);
+    return it && { ...it, name: T().names.offering[it.id] || it.name, text: tt(it.text) };
+  };
+  const runSurge = () => {
+    const m = mechanicsFor(st.run ? st.run.sets : void 0).find((x) => x.surge);
+    return m ? m.surge : null;
+  };
+  const flowHint = () => {
+    const sg = runSurge(), t = T().text;
+    return `Every card resolves at the current Flow, then raises it: +1 per card, +1 for the same ${t.element} as the last card, +1 for a rank one higher.` + (sg ? ` ${t.surgeHint}: ${t.surge}, Flow \xD72.` : "");
+  };
+  const tokenName = (rc) => rc.key === "TOKEN:ally" ? (T().colours[rc.elements[0]] || T().colours.Neutral).short + " Ally" : rc.name;
   root.classList.add("jx");
   const $ = (s) => root.querySelector(s);
   const setIdle = (v) => {
@@ -154,7 +175,7 @@ export function mountJourney(root, legacy) {
   function go() {
     const r = st.run;
     root.dataset.book = r && r.status !== "won" && r.status !== "lost" ? r.book : "";
-    bd.setTheme(root.dataset.book || "none");
+    bd.setTheme(root.dataset.book ? T().id + ":" + root.dataset.book : "none", root.dataset.book ? bookOf(root.dataset.book).backdrop : null);
     bd.setHeat(0);
     st.screenWas = st.screen;
     if (!r) {
@@ -221,8 +242,8 @@ export function mountJourney(root, legacy) {
     }
   }
   function bookCard(book) {
-    const b = BOOK_INFO[book];
-    titleCard(root, { kicker: b.kicker, title: b.name, sub: `${L.esc(b.places)}<br><span class="dim">Boss: ${L.esc(b.boss)}</span>`, art: glyph(b.el, 72) }, S);
+    const b = bookOf(book);
+    titleCard(root, { kicker: b.kicker, title: b.title, sub: `${L.esc(b.places)}<br><span class="dim">Boss: ${L.esc(b.bossName)}</span>`, art: glyph(b.el, 72) }, S);
     sfx.page();
   }
   function renderStart() {
@@ -238,18 +259,18 @@ export function mountJourney(root, legacy) {
     root.innerHTML = `<div class="jx-start">
     <div class="jx-hero">
       <div class="jx-herotext"><h2>The Journey</h2>
-        <p class="jx-lede">Three Books, fifteen floors each. Start with a small deck from your nation, add cards on the way, and beat each Book's boss.</p>
+        <p class="jx-lede">${tt("Three {books}, fifteen floors each. Start with a small deck from your nation, add cards on the way, and beat each {book}'s boss.")}</p>
         <ul class="jx-how">
           <li><b>Play cards one at a time.</b> Creatures can Strike or Guard. Spells do what they say.</li>
-          <li><b>Build Flow.</b> Each card resolves at the current Flow, then raises it. Matching elements and rising ranks raise it faster, so save your best card for last.</li>
+          <li><b>Build Flow.</b> Each card resolves at the current Flow, then raises it. ${tt("Matching {element}s")} and rising ranks raise it faster, so save your best card for last.</li>
           <li><b>Read the intent.</b> The enemy attacks when you end your turn. Split your hand between Strike and Guard.</li>
         </ul></div>
-      <ol class="jx-route">${[1, 2, 3].map((b) => `<li style="--bc:${ELEM_COLOR[BOOK_INFO[b].el]}">${glyph(BOOK_INFO[b].el, 30)}<div><b>${BOOK_INFO[b].kicker}: ${BOOK_INFO[b].name}</b><span>${L.esc(BOOK_INFO[b].places)}</span><span class="dim">Boss: ${L.esc(BOOK_INFO[b].boss)}</span></div></li>`).join("")}</ol>
+      <ol class="jx-route">${[1, 2, 3].map((b) => `<li style="--bc:${elHex(bookOf(b).el)}">${glyph(bookOf(b).el, 30)}<div><b>${bookOf(b).kicker}: ${bookOf(b).title}</b><span>${L.esc(bookOf(b).places)}</span><span class="dim">Boss: ${L.esc(bookOf(b).bossName)}</span></div></li>`).join("")}</ol>
     </div>
-    ${saved && (saved.status === "map" || saved.status === "node" || saved.status === "fight") ? `<div class="jx-resume" style="--bc:${ELEM_COLOR[BOOK_INFO[saved.book].el]}">${glyph(BOOK_INFO[saved.book].el, 34)}<div class="grow"><b>Run in progress</b><div class="note">${BOOK_INFO[saved.book].kicker}, floor ${saved.floor} of 15. ${saved.hp}/${saved.maxHp} HP, ${saved.gold} gold, ${saved.deck.length} cards.</div></div><button class="btn primary jx-big" id="jxResume">Resume run</button><button class="btn" id="jxAbandon">Abandon run</button></div>` : ""}
+    ${saved && (saved.status === "map" || saved.status === "node" || saved.status === "fight") ? `<div class="jx-resume" style="--bc:${elHex(themeOf(saved).books[saved.book].el)}">${glyph(themeOf(saved).books[saved.book].el, 34)}<div class="grow"><b>Run in progress</b><div class="note">${themeOf(saved).books[saved.book].kicker}, floor ${saved.floor} of 15. ${saved.hp}/${saved.maxHp} HP, ${saved.gold} gold, ${saved.deck.length} cards.</div></div><button class="btn primary jx-big" id="jxResume">Resume run</button><button class="btn" id="jxAbandon">Abandon run</button></div>` : ""}
     <h3 class="jx-h">Choose a nation</h3>
-    <div class="jx-starters">${NATIONS.map((n) => `<button class="jx-starter${st.nation === n.id ? " on" : ""}" data-st="${n.id}" style="--ec:${ELEM_COLOR[n.element]}">${glyph(n.element, 44)}<b>${n.name}</b><span>4 Strikes, 4 Defends and 2 ${n.element} cards</span><span class="dim">${DECK_TYPES[n.element].map(tagName).join(" \xB7 ")}</span></button>`).join("")}</div>
-    <div class="row jx-startrow"><button class="btn primary jx-big" id="jxStart" ${st.nation ? "" : "disabled"}>${st.nation ? "Begin with the " + NATIONS.find((n) => n.id === st.nation).name : "Pick a nation to begin"}</button><span class="note">Commons are always offered. Uncommons and better appear once you own them: ${ownedKeys().length} of 262 so far.</span></div>
+    <div class="jx-starters">${NATIONS.map((n) => `<button class="jx-starter${st.nation === n.id ? " on" : ""}" data-st="${n.id}" style="--ec:${elHex(n.element)}">${glyph(n.element, 44)}<b>${n.name}</b><span>4 Strikes, 4 Defends and 2 ${n.element} cards</span><span class="dim">${DECK_TYPES[n.element].map((t) => tagName(t, T())).join(" \xB7 ")}</span></button>`).join("")}</div>
+    <div class="row jx-startrow"><button class="btn primary jx-big" id="jxStart" ${st.nation ? "" : "disabled"}>${st.nation ? "Begin with the " + NATIONS.find((n) => n.id === st.nation).name : "Pick a nation to begin"}</button><span class="note">Commons are always offered. Uncommons and better appear once you own them: ${ownedKeys().length} of ${L.BASE.filter(isRunCard).length} so far.</span></div>
   </div>`;
     root.querySelectorAll("[data-st]").forEach((b) => b.onclick = () => {
       st.nation = b.dataset.st;
@@ -293,7 +314,8 @@ export function mountJourney(root, legacy) {
   function startRun(seed) {
     seed = seed || (S.settings.jseedNext || Math.random().toString(36).slice(2, 8).toUpperCase());
     S.settings.jseedNext = null;
-    st.run = createRun({ seed, nation: st.nation, ownedKeys: ownedKeys(), ownedStars: ownedStars() });
+    st.run = createRun({ seed, ...st.newRunOpts || { nation: st.nation }, ownedKeys: ownedKeys(), ownedStars: ownedStars() });
+    st.newRunOpts = null;
     st.introSeen = null;
     st.bookShown = null;
     st.lastGold = st.lastHp = null;
@@ -301,7 +323,7 @@ export function mountJourney(root, legacy) {
   }
   const TIER_NAME = { common: "Common", uncommon: "Uncommon", rare: "Rare", mythic: "Mythic" };
   function jokerTile(id, extra = "", o = {}) {
-    const j = jokerById(id), prog = o.state ? jokerProgress(j, o.state) : null;
+    const j = charmOf(id), prog = o.state ? jokerProgress(j, o.state) : null;
     return `<div class="jx-joker ${o.cls || ""} t-${j.tier}" data-jid="${id}" ${extra} style="--tc:${TIER_COLOR[j.tier]}" title="${L.esc(j.text)}"><span class="jk-kind"><i class="jk-dot"></i>${TIER_NAME[j.tier]} ${j.kind === "legend" ? "legend" : "charm"}${o.stars > 1 ? " " + "\u2605".repeat(o.stars) : ""}</span><b>${L.esc(j.name)}</b><span class="jk-text">${L.esc(j.text)}</span>${prog ? `<span class="jk-prog"><b>+${prog.value}</b><i class="jk-bar"><i style="width:${prog.progress / prog.every * 100}%"></i></i>${prog.progress}/${prog.every}</span>` : ""}${o.price != null ? `<span class="jk-price${o.poor ? " poor" : ""}">${COIN} ${o.price}</span>` : ""}</div>`;
   }
   function jokerRow(r, sell, empties = true) {
@@ -326,8 +348,8 @@ export function mountJourney(root, legacy) {
     return `<div class="jx-hud">
     <div class="jx-hudhp${low ? " low" : ""}" id="jxHudHp" title="Health carries over between fights"><span class="ico">\u2665</span><b>${r.hp}<small>/${r.maxHp}</small></b><div class="jx-phpbar"><i style="width:${r.hp / r.maxHp * 100}%"></i></div></div>
     <div class="jx-hudgold" title="Gold for shops this run">${COIN} <b id="jxGold">${r.gold}</b></div>
-    <div class="jx-hudbook">${glyph(BOOK_INFO[r.book].el, 18)}<span>${BOOK_INFO[r.book].kicker}</span><span class="dim">Floor ${r.floor} of 15</span></div>
-    <div class="jx-hudoff">${[0, 1].map((i) => r.offerings[i] ? `<button class="chip on" data-off="${i}" title="${L.esc(itemById(r.offerings[i]).text)}. Click to use.">${L.esc(itemById(r.offerings[i]).name)}</button>` : '<span class="chip empty" title="Offerings come from shops, treasure and events">No Offering</span>').join("")}</div>
+    <div class="jx-hudbook">${glyph(bookOf(r.book).el, 18)}<span>${bookOf(r.book).kicker}</span><span class="dim">Floor ${r.floor} of 15</span></div>
+    <div class="jx-hudoff">${[0, 1].map((i) => r.offerings[i] ? `<button class="chip on" data-off="${i}" title="${L.esc(itemOf(r.offerings[i]).text)}. Click to use.">${L.esc(itemOf(r.offerings[i]).name)}</button>` : '<span class="chip empty" title="Offerings come from shops, treasure and events">No Offering</span>').join("")}</div>
     <button class="btn jx-deckbtn" id="jxDeck" title="See your run deck">Deck <b>${r.deck.length}</b></button>
     <span class="note jx-seed" title="The same seed gives the same maps and offers">Seed ${L.esc(r.seed)}</span>
   </div>
@@ -340,7 +362,7 @@ export function mountJourney(root, legacy) {
   }
   function useOff(slot) {
     if (st.busy) return;
-    const r = st.run, id = r.offerings[slot], it = itemById(id);
+    const r = st.run, id = r.offerings[slot], it = itemOf(id);
     const after = (res) => {
       if (!res.ok) {
         L.toast && L.toast(res.reason);
@@ -369,7 +391,7 @@ export function mountJourney(root, legacy) {
     const draw = () => {
       o.innerHTML = `<div class="jx-modalbox wide"><button class="x" aria-label="Close">\xD7</button><h2>${L.esc(title)}</h2>
       ${pick ? `<p class="note">Choose ${pick > 1 ? "up to " + pick + " cards" : "a card"}.</p>` : ""}
-      ${element ? `<div class="row">${["Air", "Water", "Earth", "Fire", "Spirit"].map((e) => `<button class="chip${el === e ? " on" : ""}" data-el="${e}">${glyph(e, 14)} ${e}</button>`).join("")}</div>` : ""}
+      ${element ? `<div class="row">${["Air", "Water", "Earth", "Fire", "Spirit"].map((e) => `<button class="chip${el === e ? " on" : ""}" data-el="${e}">${glyph(e, 14)} ${T().colours[e].short}</button>`).join("")}</div>` : ""}
       <div class="jx-deckgrid">${r.deck.map((c, i) => `<div class="jx-dcard${chosen.has(i) ? " sel" : ""}" data-di="${i}">${cardFace(c)}</div>`).join("")}</div>
       ${pick ? `<div class="row"><button class="btn primary" id="jxPickOk" ${chosen.size >= minPick && (!element || el) ? "" : "disabled"}>Confirm</button></div>` : ""}</div>`;
       o.querySelector(".x").onclick = () => o.remove();
@@ -423,18 +445,18 @@ export function mountJourney(root, legacy) {
       const [x, y] = pos(n), big = n.type === "boss";
       const cls = [n.type, avail.has(n.id) ? "avail" : "", path.has(n.id) ? "taken" : "", n.id === r.nodeId ? "here" : "", !avail.has(n.id) && !path.has(n.id) && n.floor <= r.floor ? "gone" : ""].join(" ");
       const k = avail.has(n.id) ? availList.findIndex((a) => a.id === n.id) : 0;
-      return `<g class="jx-node ${cls}" data-node="${n.id}" transform="translate(${x} ${y})"><g class="pop" style="--k:${k}">${big ? `<g class="rays">${Array.from({ length: 12 }, (_, i) => `<path d="M0 -44 L5 -60 L-5 -60Z" transform="rotate(${i * 30})"/>`).join("")}</g><text class="bossname" y="-70" text-anchor="middle">${L.esc(BOOK_INFO[r.book].boss)}</text>` : ""}<circle class="seal" r="${big ? 38 : 24}"/><circle class="ring" r="${big ? 31 : 19}"/><text y="${big ? 11 : 7}" font-size="${big ? 30 : 20}" text-anchor="middle">${NODE_ICON[n.type]}</text></g></g>`;
+      return `<g class="jx-node ${cls}" data-node="${n.id}" transform="translate(${x} ${y})"><g class="pop" style="--k:${k}">${big ? `<g class="rays">${Array.from({ length: 12 }, (_, i) => `<path d="M0 -44 L5 -60 L-5 -60Z" transform="rotate(${i * 30})"/>`).join("")}</g><text class="bossname" y="-70" text-anchor="middle">${L.esc(bookOf(r.book).bossName)}</text>` : ""}<circle class="seal" r="${big ? 38 : 24}"/><circle class="ring" r="${big ? 31 : 19}"/><text y="${big ? 11 : 7}" font-size="${big ? 30 : 20}" text-anchor="middle">${NODE_ICON[n.type]}</text></g></g>`;
     }).join("");
     const floors = Array.from({ length: 15 }, (_, i) => `<text class="fl${i + 1 === r.floor + 1 ? " now" : ""}" x="22" y="${Y(i + 1) + 5}">${i + 1}</text>`).join("");
     const lotus = `<g class="jx-lotus" id="jxLotus" style="transform:translate(${hx}px,${hy}px)"><circle r="13" class="halo"/>${[0, 45, 90, 135, 180, 225, 270, 315].map((a) => `<ellipse rx="4" ry="9" transform="rotate(${a}) translate(0 -7)"/>`).join("")}<circle r="4" class="core"/></g>`;
     const fogY = Y(Math.min(15, r.floor + 4)), fog = r.floor + 4 >= 15 ? "" : `<defs><linearGradient id="jxFog" x1="0" y1="0" x2="0" y2="${fogY}" gradientUnits="userSpaceOnUse"><stop offset="0" style="stop-color:var(--bk2);stop-opacity:.82"/><stop offset=".75" style="stop-color:var(--bk2);stop-opacity:.55"/><stop offset="1" style="stop-color:var(--bk2);stop-opacity:0"/></linearGradient></defs><rect class="jx-fog" x="0" y="0" width="${W}" height="${fogY}" fill="url(#jxFog)"/>`;
-    const nextList = availList.map((n, i) => `<button class="jx-next" data-go="${n.id}"><span class="ico">${NODE_ICON[n.type]}</span><span><b>${n.type === "boss" ? L.esc(BOOK_INFO[r.book].boss) : NODE_NAME[n.type]}</b><span class="note">${NODE_DESC[n.type]}</span></span><kbd>${i + 1}</kbd></button>`).join("");
+    const nextList = availList.map((n, i) => `<button class="jx-next" data-go="${n.id}"><span class="ico">${NODE_ICON[n.type]}</span><span><b>${n.type === "boss" ? L.esc(bookOf(r.book).bossName) : tt(NODE_NAME[n.type])}</b><span class="note">${tt(NODE_DESC[n.type])}</span></span><kbd>${i + 1}</kbd></button>`).join("");
     root.innerHTML = `<div class="jx-runwrap">${hud()}
     <div class="jx-mapgrid">
       <div class="jx-mapscroll" id="jxMapScroll"><svg class="jx-map" viewBox="0 0 ${W} ${H2}" width="${W}" height="${H2}">${mapPattern(r.book, W, H2)}${floors}${edges}${dots}${lotus}${fog}</svg></div>
       <aside class="jx-mapside">
-        <h2>${glyph(BOOK_INFO[r.book].el, 26)} ${BOOK_INFO[r.book].kicker}: ${BOOK_INFO[r.book].name}</h2>
-        <p class="note">${L.esc(BOOK_INFO[r.book].places)}. ${15 - r.floor} floors to ${L.esc(BOOK_INFO[r.book].boss)}.</p>
+        <h2>${glyph(bookOf(r.book).el, 26)} ${bookOf(r.book).kicker}: ${bookOf(r.book).title}</h2>
+        <p class="note">${L.esc(bookOf(r.book).places)}. ${15 - r.floor} floors to ${L.esc(bookOf(r.book).bossName)}.</p>
         <h3 class="jx-h">Where next</h3>
         <div class="jx-nextlist">${nextList || '<p class="bad">No path forward.</p>'}</div>
         <div class="jx-nodeinfo note" id="jxNodeInfo">Hover a stop on the map to see what it holds.</div>
@@ -469,7 +491,7 @@ export function mountJourney(root, legacy) {
     root.querySelectorAll(".jx-node, .jx-next").forEach((g) => {
       g.onmouseenter = () => {
         const n = nodeById(map, g.dataset.node || g.dataset.go);
-        info.innerHTML = `<b>${NODE_ICON[n.type]} ${n.type === "boss" ? L.esc(BOOK_INFO[r.book].boss) : NODE_NAME[n.type]}</b> \xB7 floor ${n.floor}<br>${NODE_DESC[n.type]}${avail.has(n.id) ? "" : '<br><span class="dim">Not reachable from where you are.</span>'}`;
+        info.innerHTML = `<b>${NODE_ICON[n.type]} ${n.type === "boss" ? L.esc(bookOf(r.book).bossName) : tt(NODE_NAME[n.type])}</b> \xB7 floor ${n.floor}<br>${tt(NODE_DESC[n.type])}${avail.has(n.id) ? "" : '<br><span class="dim">Not reachable from where you are.</span>'}`;
         root.querySelector(`.jx-node[data-node="${n.id}"]`)?.classList.add("hl");
       };
       g.onmouseleave = () => root.querySelectorAll(".jx-node.hl").forEach((e) => e.classList.remove("hl"));
@@ -523,7 +545,7 @@ export function mountJourney(root, legacy) {
   }
   const nodeReward = {
     html: (p) => `${p.kind === "treasure" ? sceneArt("treasure") : '<div class="jx-rays"></div>'}<h2>${p.kind === "treasure" ? "Treasure" : p.gold >= 60 ? "The boss is beaten" : "Victory"}</h2>
-    <div class="jx-gains">${p.gold ? `<span class="jx-goldup">${COIN} +${p.gold} gold</span>` : ""}${p.maxHpUp ? `<span class="jx-hpup">\u2665 +${p.maxHpUp} max HP</span>` : ""}${p.offering ? `<span class="jx-offup">${st.run.offerings.includes(p.offering) ? "Found" : "Left behind (slots full)"}: ${L.esc(itemById(p.offering).name)}</span>` : ""}</div>
+    <div class="jx-gains">${p.gold ? `<span class="jx-goldup">${COIN} +${p.gold} gold</span>` : ""}${p.maxHpUp ? `<span class="jx-hpup">\u2665 +${p.maxHpUp} max HP</span>` : ""}${p.offering ? `<span class="jx-offup">${st.run.offerings.includes(p.offering) ? "Found" : "Left behind (slots full)"}: ${L.esc(itemOf(p.offering).name)}</span>` : ""}</div>
     ${p.cards && !p.cardTaken ? `<h3 class="jx-h">Add a card to your deck</h3>${cardPick(p.cards)}<div class="row center"><button class="btn quiet" id="jxSkipCard">Skip the card</button></div>` : p.cards ? '<p class="note">Card added to your deck.</p>' : ""}
     ${p.jokers && !p.jokerTaken ? `<h3 class="jx-h">Choose a Legend or Charm</h3><div class="jx-offer">${p.jokers.map((id, i) => jokerTile(id, `data-jk="${i}"`, { cls: "pick big" })).join("")}</div><div class="row center"><button class="btn quiet" id="jxSkipJoker">Skip it</button></div>` : ""}
     ${continueBtn()}`,
@@ -583,7 +605,7 @@ export function mountJourney(root, legacy) {
     html: (p) => {
       const r = st.run, g = r.gold;
       const item = (it, i) => {
-        const d = itemById(it.id);
+        const d = itemOf(it.id);
         return `<div class="jx-item${it.sold ? " sold" : ""}"><b>${L.esc(d.name)}</b><span class="note">${L.esc(d.text)}</span><button class="btn" data-buy="item:${i}" ${it.sold ? "disabled" : ""}>${it.sold ? "Sold" : price(it.price, g)}</button></div>`;
       };
       return `<div class="jx-nodeheading">${sceneArt("shop")}<div><h2>Shop</h2><p class="note">${p.interest ? `You earned ${p.interest} gold interest on the way in. ` : ""}You have ${g} gold. Click a Legend or Charm in your row to sell it for half its price.</p></div></div>
@@ -632,7 +654,7 @@ export function mountJourney(root, legacy) {
         deckModal({ title: "Remove a card", pick: 1, onPick: ([i]) => msg(removeCard(st.run, i)) });
       };
       root.querySelectorAll("[data-sell]").forEach((b) => b.onclick = () => {
-        const j = jokerById(st.run.jokers[+b.dataset.sell].id);
+        const j = charmOf(st.run.jokers[+b.dataset.sell].id);
         if (confirm(`Sell ${j.name} for ${Math.floor(j.price / 2)} gold?`)) msg(sellJoker(st.run, +b.dataset.sell));
       });
       $("#jxCont").onclick = () => {
@@ -706,7 +728,7 @@ export function mountJourney(root, legacy) {
     return A ? `<svg class="jx-scene" viewBox="0 0 140 110" aria-hidden="true">${A}</svg>` : "";
   }
   const nodeSwap = {
-    html: (p) => `<h2>Your Joker row is full</h2><p class="note">Replace one of your five with <b>${L.esc(jokerById(p.incoming).name)}</b>, or leave it behind.</p>
+    html: (p) => `<h2>Your Joker row is full</h2><p class="note">Replace one of your five with <b>${L.esc(charmOf(p.incoming).name)}</b>, or leave it behind.</p>
     <div class="jx-offer">${jokerTile(p.incoming, "", { cls: "incoming" })}</div><h3>Replace\u2026</h3>
     <div class="jx-offer">${st.run.jokers.map((j, i) => jokerTile(j.id, `data-sw="${i}"`, { cls: "pick", state: st.run.jstate, stars: j.stars })).join("")}</div>${continueBtn("Leave it")}`,
     wire() {
@@ -749,12 +771,12 @@ export function mountJourney(root, legacy) {
     else sfx.lose();
     const fl = (r.book - 1) * 15 + r.floor;
     root.innerHTML = `<div class="jx-between jx-summary ${won2 ? "won" : "lost"}">
-    <h2>${won2 ? "The Phoenix King falls" : r.abandoned ? "Run abandoned" : "Your journey ends here"}</h2>
-    <p class="note">${won2 ? "All three Books cleared." : `Defeated in ${BOOK_INFO[r.book].kicker}, floor ${r.floor}.`} Seed ${L.esc(r.seed)}.</p>
+    <h2>${won2 ? L.esc(T().text.victory) : r.abandoned ? "Run abandoned" : "Your journey ends here"}</h2>
+    <p class="note">${won2 ? tt("All three {books} cleared.") : `Defeated in ${bookOf(r.book).kicker}, floor ${r.floor}.`} Seed ${L.esc(r.seed)}.</p>
     <div class="jx-payout"><span>${settled ? 'Paid to your wallet' : 'Payout pending — browser storage could not save it'}</span><b id="jxPayout">+$${pay.toFixed(2)}</b></div>
     ${settled ? '' : '<p class="note">Your run has not been cleared. Free browser storage, then retry before starting another run.</p><button class="btn primary" id="jxRetryPayout">Retry payout</button>'}
-    <div class="jx-runbar" title="How far you got: ${fl} of 45 floors">${[1, 2, 3].map((b) => `<span class="seg b${b}" style="--bc:${ELEM_COLOR[BOOK_INFO[b].el]}"><i style="width:${Math.max(0, Math.min(15, fl - (b - 1) * 15)) / 15 * 100}%"></i></span>`).join("")}</div>
-    <div class="sumTiles" style="max-width:900px">${tile("Fights won", r.stats.fights + r.stats.elites + r.stats.bosses, `${r.stats.elites} elite${r.stats.elites === 1 ? "" : "s"}, ${r.stats.bosses} boss${r.stats.bosses === 1 ? "" : "es"}`)}${tile("Best hit", fmtNum(r.stats.bestHit))}${tile("Highest Flow", "\xD7" + (r.stats.peakFlow || 1))}${tile("Avatar States", r.stats.avatar)}${tile("Deck", r.deck.length + " cards")}</div>
+    <div class="jx-runbar" title="How far you got: ${fl} of 45 floors">${[1, 2, 3].map((b) => `<span class="seg b${b}" style="--bc:${elHex(bookOf(b).el)}"><i style="width:${Math.max(0, Math.min(15, fl - (b - 1) * 15)) / 15 * 100}%"></i></span>`).join("")}</div>
+    <div class="sumTiles" style="max-width:900px">${tile("Fights won", r.stats.fights + r.stats.elites + r.stats.bosses, `${r.stats.elites} elite${r.stats.elites === 1 ? "" : "s"}, ${r.stats.bosses} boss${r.stats.bosses === 1 ? "" : "es"}`)}${tile("Best hit", fmtNum(r.stats.bestHit))}${tile("Highest Flow", "\xD7" + (r.stats.peakFlow || 1))}${tile(T().text.surge + "s", r.stats.avatar)}${tile("Deck", r.deck.length + " cards")}</div>
     <div class="jx-offer">${r.jokers.map((j) => jokerTile(j.id, "", { state: r.jstate, stars: j.stars })).join("")}</div>
     <div class="row center"><button class="btn" id="jxCopySeed">Copy seed</button><button class="btn primary jx-big" id="jxAgain" ${settled ? '' : 'disabled'}>Start a new journey</button></div></div>`;
     if ($("#jxRetryPayout")) $("#jxRetryPayout").onclick = renderSummary;
@@ -779,46 +801,14 @@ export function mountJourney(root, legacy) {
   }
   function renderBossIntro(enemy) {
     st.screen = "bossintro";
-    const phases = (enemy.phases || []).map((ph) => `<div class="jx-rule">Below ${Math.round(ph.atHpPct * 100)}% HP: ${L.esc(ph.rule.text)}</div>`).join("");
+    const phases = (enemy.phases || []).map((ph) => `<div class="jx-rule">Below ${Math.round(ph.atHpPct * 100)}% HP: ${L.esc(tt(ph.rule.text))}</div>`).join("");
     root.innerHTML = `<div class="jx-bossintro"><div class="jx-bosscard"><div class="jx-bosslabel">BOSS</div><div class="jx-enemyart big">${enemyArt(enemy)}</div>
-    <h2>${L.esc(enemy.name)}</h2>${enemy.rule ? `<div class="jx-rule">${L.esc(enemy.rule.text)}</div>` : ""}${phases}
+    <h2>${L.esc(enemy.name)}</h2>${enemy.rule ? `<div class="jx-rule">${L.esc(tt(enemy.rule.text))}</div>` : ""}${phases}
     <div class="note">${fmtNum(enemy.hp)} HP \xB7 attack ${enemy.atk} \xB7 grows 15% stronger after every attack</div>
     <button class="btn primary jx-big" id="jxFightBoss">Fight</button></div></div>`;
     sfx.stinger();
     $("#jxFightBoss").onclick = () => renderFight(true);
   }
-  const ARCH = {
-    fn_soldier: "soldier",
-    navy_marine: "soldier",
-    elite_guard: "soldier",
-    warden: "soldier",
-    omashu_guard: "soldier",
-    dai_li: "soldier",
-    long_feng: "soldier",
-    lieutenant: "bender",
-    pirate: "bender",
-    rumble_brawler: "bender",
-    king_bumi: "bender",
-    ty_lee_mai: "bender",
-    combustion_man: "bender",
-    eclipse_azula: "bender",
-    kemurikage: "spirit",
-    hungry_spirit: "spirit",
-    wan_shi_tong: "spirit",
-    komodo_rider: "beast",
-    canyon_crawler: "beast",
-    unagi: "beast",
-    buzzard_wasp: "beast",
-    tunnel_badger: "beast",
-    zuko_ship: "machine",
-    war_balloon: "machine",
-    mecha_tank: "machine",
-    yuyan: "archer",
-    sand_raider: "archer",
-    zhao: "boss",
-    azula_catacombs: "boss",
-    ozai: "boss"
-  };
   const gear = (() => {
     let d = "";
     for (let i = 0; i < 16; i++) {
@@ -836,9 +826,8 @@ export function mountJourney(root, legacy) {
     bender: '<path d="M60 60m-34 0a34 34 0 1 1 34 34 22 22 0 1 1-22-22 11 11 0 1 1 11 11" fill="none" stroke-width="9" class="line"/><circle class="glow" cx="60" cy="60" r="5"/>',
     boss: '<path d="M26 54l14 22 20-38 20 38 14-22-4 38H30z"/><circle class="glow" cx="60" cy="34" r="5"/><circle class="glow" cx="26" cy="52" r="4"/><circle class="glow" cx="94" cy="52" r="4"/><path class="glow" d="M38 84h44v5H38z"/>'
   };
-  const BOOK_HUE = { 1: ["#8fd0ff", "#123a5c", "#06121e"], 2: ["#b8e08a", "#2a4418", "#0a1206"], 3: ["#ffb07a", "#6a1a0c", "#1a0604"] };
   function enemyArt(e) {
-    const [hi, mid, lo] = BOOK_HUE[st.run && st.run.book || 1], arch = ARCH[e.id] || "soldier", id = "eg" + e.id;
+    const [hi, mid, lo] = bookOf(st.run && st.run.book || 1).hue, arch = T().enemyArt[e.id] || "soldier", id = "eg" + e.id;
     const ring = e.boss ? "#f0c56a" : e.elite ? "#e05a4a" : hi;
     return `<svg viewBox="0 0 120 120" class="arch-${arch}"><defs><radialGradient id="${id}" cx=".5" cy=".38" r=".7"><stop offset="0" stop-color="${hi}"/><stop offset=".45" stop-color="${mid}"/><stop offset="1" stop-color="${lo}"/></radialGradient></defs>
     <circle cx="60" cy="60" r="57" fill="url(#${id})" stroke="${ring}" stroke-width="${e.boss ? 4 : 3}"/>
@@ -859,17 +848,17 @@ export function mountJourney(root, legacy) {
         <div class="jx-portrait"><i class="aura"></i><i class="aura two"></i><div class="jx-enemyart">${enemyArt(e.def)}</div><i class="ground"></i></div>
         <div class="jx-enemyinfo">
           <div class="row" style="gap:8px"><b class="jx-ename">${L.esc(e.def.name)}</b>${e.def.boss ? '<span class="jx-bosschip">Boss</span>' : ""}${e.def.elite ? '<span class="jx-bosschip elite">Elite</span>' : ""}${e.def.trait === "enrage" ? '<span class="jx-chip">Enrage: +2 attack each hit</span>' : ""}${e.def.trait === "heal" ? '<span class="jx-chip">Heals 6% each turn</span>' : ""}</div>
-          ${f.rule ? `<div class="jx-rule small">${L.esc(f.rule.text)}</div>` : ""}<div id="jxHex"></div>
+          ${f.rule ? `<div class="jx-rule small">${L.esc(tt(f.rule.text))}</div>` : ""}<div id="jxHex"></div>
           <div class="jx-hpbar"><i class="lag" id="jxHpLag"></i><i class="cur" id="jxHpCur"></i><span id="jxHpTxt"></span></div>
           <div class="jx-badges" id="jxEBadges"></div>
         </div>
         <div class="jx-intent" id="jxIntent"></div>
       </div>
-      <div class="jx-progress"><span class="now">${glyph(BOOK_INFO[r.book].el, 14)} ${BOOK_INFO[r.book].kicker}, floor ${r.floor}</span><span>${COIN} ${r.gold}</span>${r.offerings.length ? `<i>\xB7</i><span>${r.offerings.map((o, i) => `<button class="chip" data-off="${i}" title="${L.esc(itemById(o).text)}">${L.esc(itemById(o).name)}</button>`).join(" ")}</span>` : ""}</div>
+      <div class="jx-progress"><span class="now">${glyph(bookOf(r.book).el, 14)} ${bookOf(r.book).kicker}, floor ${r.floor}</span><span>${COIN} ${r.gold}</span>${r.offerings.length ? `<i>\xB7</i><span>${r.offerings.map((o, i) => `<button class="chip" data-off="${i}" title="${L.esc(itemOf(o).text)}">${L.esc(itemOf(o).name)}</button>`).join(" ")}</span>` : ""}</div>
     </div>
     <div class="jx-mid">
       <div class="jx-jokers" id="jxJokers">${jokerRow(r, false, false)}</div>
-      <div class="jx-flow" id="jxFlow" title="Every card resolves at the current Flow, then raises it: +1 per card, +1 for the same element as the last card, +1 for a rank one higher. All four bending elements in one turn: Avatar State, Flow \xD72.">
+      <div class="jx-flow" id="jxFlow" title="${L.esc(flowHint())}">
         <div class="jx-flowlbl">Flow</div>
         <div class="jx-flownum"><span class="x">\xD7</span><b id="jxFlowN">${f.flow}</b></div>
         <div class="jx-chain" id="jxChain"></div>
@@ -939,7 +928,7 @@ export function mountJourney(root, legacy) {
     const when = e.countdown <= 1 ? "when you end your turn" : `in <b>${e.countdown}</b> turns`;
     const hit = intentHit(f), copyBonus = pendingCopyBonus(f), cancel = e.cancelNext && it.hits ? '<div class="jx-canceled">next attack canceled</div>' : "";
     const ICON = { strike: "\u2694", charge: "\u26A1", lightning: "\u{1F329}", flurry: "\u{1F3F9}", fortify: "\u{1F6E1}", hex: "\u{1F300}" };
-    const main = it.kind === "fortify" ? `+${it.armor} armor` : it.kind === "hex" ? L.esc(it.hex.text) : it.kind === "flurry" ? `<b>${hit}</b> \xD7${it.hits}` : `<b>${hit}</b>`;
+    const main = it.kind === "fortify" ? `+${it.armor} armor` : it.kind === "hex" ? L.esc(tt(hexText(it.hex))) : it.kind === "flurry" ? `<b>${hit}</b> \xD7${it.hits}` : `<b>${hit}</b>`;
     const sub = { charge: `${e.countdown <= 1 ? "unleashes" : "charging"} ${when}`, lightning: `lightning ${when}: ignores half your Block`, fortify: `fortifies ${when}`, hex: `hex ${when}` }[it.kind] || when;
     $("#jxIntent").innerHTML = `<div class="jx-sword ${it.kind}">${ICON[it.kind] || "\u2694"} ${main}</div><div class="note">${sub}</div>${cancel}${copyBonus ? `<div class="jx-esc">+${copyBonus} mirrored from your Flow</div>` : ""}<div class="jx-esc">+15% after each attack</div>`;
     $("#jxIntent").classList.toggle("danger", e.countdown <= 1 && hit > 0);
@@ -947,7 +936,7 @@ export function mountJourney(root, legacy) {
     $("#jxIntent").title = "Enemies grow 15% stronger after every attack. Long fights get dangerous.";
     bd.setHeat(e.countdown <= 1 && hit > 0 ? Math.min(1, 0.35 + hit / Math.max(1, f.player.hp)) : 0.05);
     const hx = $("#jxHex");
-    if (hx) hx.innerHTML = (f.hex ? `<div class="jx-rule small hex">\u{1F300} This turn: ${L.esc(f.hex.text)}</div>` : "") + (f.taxed ? `<div class="jx-rule small hex">${f.taxed} cards cost +1</div>` : "");
+    if (hx) hx.innerHTML = (f.hex ? `<div class="jx-rule small hex">\u{1F300} This turn: ${L.esc(tt(hexText(f.hex)))}</div>` : "") + (f.taxed ? `<div class="jx-rule small hex">${f.taxed} cards cost +1</div>` : "");
   }
   function updatePlayer() {
     const f = st.f, p = f.player;
@@ -982,7 +971,7 @@ export function mountJourney(root, legacy) {
   function renderPowers() {
     const el = $("#jxPowers");
     if (!el) return;
-    el.innerHTML = st.f.powers.length ? `<span class="lbl">Powers</span>${st.f.powers.map((c) => `<span class="jx-power" title="${L.esc(c.name)}: ${L.esc(effectLines(c).join(", "))}" style="--ec:${ELEM_COLOR[c.elements[0]]}">${glyph(c.elements[0], 14)}${L.esc(c.name.split(",")[0])}</span>`).join("")}` : "";
+    el.innerHTML = st.f.powers.length ? `<span class="lbl">Powers</span>${st.f.powers.map((c) => `<span class="jx-power" title="${L.esc(c.name)}: ${L.esc(effectLines(c).join(", "))}" style="--ec:${elHex(c.elements[0])}">${glyph(c.elements[0], 14)}${L.esc(c.name.split(",")[0])}</span>`).join("")}` : "";
   }
   function updateEndTurn() {
     const f = st.f, d = incomingDamage(f), sub = $("#jxEndSub"), b = $("#jxEnd");
@@ -996,7 +985,7 @@ export function mountJourney(root, legacy) {
   function renderChain() {
     const f = st.f, ch = $("#jxChain");
     if (!ch) return;
-    ch.innerHTML = f.chain.map((c, k) => `<span class="lnk${c.mode === "guard" ? " g" : ""}" style="--ec:${ELEM_COLOR[c.el.find((x) => x !== "Neutral") || "Neutral"]}" title="${c.mode === "guard" ? "Guard" : c.mode === "strike" ? "Strike" : "Play"}">${glyph(c.el.find((x) => x !== "Neutral") || "Neutral", 13)}</span>`).join("") || '<span class="dim">Play cards to build Flow</span>';
+    ch.innerHTML = f.chain.map((c, k) => `<span class="lnk${c.mode === "guard" ? " g" : ""}" style="--ec:${elHex(c.el.find((x) => x !== "Neutral") || "Neutral")}" title="${c.mode === "guard" ? "Guard" : c.mode === "strike" ? "Strike" : "Play"}">${glyph(c.el.find((x) => x !== "Neutral") || "Neutral", 13)}</span>`).join("") || '<span class="dim">Play cards to build Flow</span>';
   }
   function updateFlow(ghost) {
     const f = st.f, n = $("#jxFlowN");
@@ -1011,7 +1000,7 @@ export function mountJourney(root, legacy) {
       return;
     }
     const r = ghost.res, what = r.mode === "strike" ? `${fmtNum(r.dmg)} damage` : r.mode === "guard" ? `+${fmtNum(r.block)} Block` : [r.dmg && `${fmtNum(r.dmg)} damage`, r.block && `+${fmtNum(r.block)} Block`, r.burn && `Burn ${r.burn}`, r.draw && `Draw ${r.draw}`].filter(Boolean).join(", ") || "its effect";
-    nx.innerHTML = `<span class="gain">+${fmtNum(r.flowAfter - r.flowBefore)}</span> \u2192 \xD7${fmtNum(r.flowAfter)}${r.avatar ? ' <b class="av">Avatar State</b>' : ""}<div class="what">${what}${r.kills ? ' \xB7 <span class="good">defeats the enemy</span>' : ""}</div>`;
+    nx.innerHTML = `<span class="gain">+${fmtNum(r.flowAfter - r.flowBefore)}</span> \u2192 \xD7${fmtNum(r.flowAfter)}${r.avatar ? ` <b class="av">${L.esc(T().text.surge)}</b>` : ""}<div class="what">${what}${r.kills ? ' \xB7 <span class="good">defeats the enemy</span>' : ""}</div>`;
     nx.classList.add("on");
     renderEnergy(r.cost);
   }
@@ -1024,7 +1013,7 @@ export function mountJourney(root, legacy) {
   }
   // Original vector insignia distinguish the two basics at a glance, even offline.
   function basicArt(rc, element) {
-    const color = ELEM_COLOR[element] || "#a5b8ae", guard = !strikeValue(rc);
+    const color = elHex(element), guard = !strikeValue(rc);
     const shield = '<path d="M100 16 143 31 137 66Q127 92 100 104 73 92 63 66L57 31Z" fill="currentColor" opacity=".18"/><path d="M100 16 143 31 137 66Q127 92 100 104 73 92 63 66L57 31Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M100 24 134 36 129 65Q121 84 100 95 79 84 71 65L66 36Z" fill="none" stroke="#dfedcf" stroke-opacity=".55"/><path d="M26 64Q40 23 66 18M174 64Q160 23 134 18M36 89 46 92M164 89 154 92" fill="none" stroke="currentColor" stroke-opacity=".5"/>';
     const strike = '<path d="M27 97Q93 94 160 21L133 60 157 49Q120 95 27 97Z" fill="currentColor" opacity=".27"/><path d="M30 94Q100 80 160 21L144 52 169 38Q124 93 30 94Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M51 83Q102 69 160 21" fill="none" stroke="#e8f2d8" stroke-width="2"/><path d="M148 11 144 22M176 28 165 32M170 12 162 20M44 101 35 104" stroke="currentColor" stroke-width="2"/>';
     const motif = GLYPH[element] || GLYPH.Neutral;
@@ -1033,9 +1022,9 @@ export function mountJourney(root, legacy) {
   function cardFace(rc, live) {
     const cj = byKey[rc.key];
     const src = cj && L.artCrop ? L.artCrop(cj) : null;
-    const element = rc.token ? rc.elements[0] : st.run ? NATIONS.find((n) => n.id === st.run.nation)?.element || "Neutral" : "Neutral";
-    const art = rc.role === "basic" ? basicArt(rc, element) : rc.token ? `<div class="jc-emblem" style="--ec:${ELEM_COLOR[element] || "#b9ab95"}">${glyph(element, 64)}</div>` : (cj && L.artSVG ? L.artSVG(cj) : "") + (src ? `<img src="${src}" alt="" loading="eager" decoding="async" referrerpolicy="no-referrer" onload="this.classList.add('ok')" onerror="this.remove()">` : "");
-    return journeyCardHTML(rc, { art, name: L.esc(cj ? (cj.flavor || cj.name).split(",")[0] : rc.name), typeLine: typeLine(cj, rc), rarityColor: RAR[cj?.r] || "#1b1b1b", rarity: cj?.r || "C", glyph, live });
+    const element = rc.token ? rc.elements[0] : st.run ? COLOUR_ELEMENT[runColours(st.run)[0]] || "Neutral" : "Neutral";
+    const art = rc.role === "basic" ? basicArt(rc, element) : rc.token ? `<div class="jc-emblem" style="--ec:${elHex(element)}">${glyph(element, 64)}</div>` : (cj && L.artSVG ? L.artSVG(cj) : "") + (src ? `<img src="${src}" alt="" loading="eager" decoding="async" referrerpolicy="no-referrer" onload="this.classList.add('ok')" onerror="this.remove()">` : "");
+    return journeyCardHTML(rc, { art, name: L.esc(cj ? (cj.flavor || cj.name).split(",")[0] : tokenName(rc)), typeLine: typeLine(cj, rc), rarityColor: RAR[cj?.r] || "#1b1b1b", rarity: cj?.r || "C", glyph, live, theme: T() });
   }
   let peekT = null;
   function peek(rc, show) {
@@ -1262,7 +1251,7 @@ export function mountJourney(root, legacy) {
       const p = document.createElement("i");
       p.className = "jx-part " + element.toLowerCase();
       const a = Math.random() * Math.PI * 2, d = 40 + Math.random() * 70;
-      p.style.cssText = `left:${r.left - fr.left + r.width / 2}px;top:${r.top - fr.top + r.height / 2}px;--x:${Math.cos(a) * d}px;--y:${Math.sin(a) * d - 30}px;--c:${ELEM_COLOR[element]};animation-duration:${(600 + Math.random() * 400) / st.speed}ms`;
+      p.style.cssText = `left:${r.left - fr.left + r.width / 2}px;top:${r.top - fr.top + r.height / 2}px;--x:${Math.cos(a) * d}px;--y:${Math.sin(a) * d - 30}px;--c:${elHex(element)};animation-duration:${(600 + Math.random() * 400) / st.speed}ms`;
       root.appendChild(p);
       setTimeout(() => p.remove(), 1100);
     }
@@ -1289,7 +1278,7 @@ export function mountJourney(root, legacy) {
     L.save && L.save();
     const o = document.createElement("div");
     o.className = "jx-avatar";
-    o.innerHTML = `<div class="orbs">${["Air", "Water", "Earth", "Fire"].map((e, i) => `<i class="orb o${i}" style="--c:${ELEM_COLOR[e]}">${glyph(e, 34)}</i>`).join("")}</div><div class="jx-avatartitle">AVATAR STATE</div><div class="note">Flow doubled \xB7 click to skip</div>`;
+    o.innerHTML = `<div class="orbs">${(runSurge() || { els: [] }).els.map((e, i) => `<i class="orb o${i}" style="--c:${elHex(e)}">${glyph(e, 34)}</i>`).join("")}</div><div class="jx-avatartitle">${L.esc(T().text.surge.toUpperCase())}</div><div class="note">Flow doubled \xB7 click to skip</div>`;
     root.appendChild(o);
     sfx.avatar();
     ["#f2c46d", "#5aa7e0", "#6fa356", "#e8543a"].forEach((c, i) => setTimeout(() => { if(st.run === run) bd.pulse(c, 0.6); }, i * 250));
@@ -1302,8 +1291,8 @@ export function mountJourney(root, legacy) {
   function elementFx(el, anchor, strength) {
     particles(anchor, el, 10 + Math.min(14, strength));
     if (el === "Earth") shake(3 + Math.min(6, strength / 2));
-    else if (el === "Fire") bd.pulse(ELEM_COLOR.Fire, Math.min(0.9, 0.2 + strength / 20));
-    else if (el === "Water" && anchor) impact(anchor, ELEM_COLOR.Water, false, S);
+    else if (el === "Fire") bd.pulse(elHex("Fire"), Math.min(0.9, 0.2 + strength / 20));
+    else if (el === "Water" && anchor) impact(anchor, elHex("Water"), false, S);
     else if (el === "Spirit" && anchor) {
       anchor.classList.remove("wobble");
       void anchor.offsetWidth;
@@ -1327,7 +1316,7 @@ export function mountJourney(root, legacy) {
     const cardEl = root.querySelector(`.jx-hcard[data-i="${i}"]`), hpBefore = f.enemy.hp, blockBefore = f.player.block;
     const { res, events } = runPlayCard(st.run, i, mode);
     persist();
-    const sp = st.speed, el = c.elements.find((x) => x !== "Neutral") || "Neutral", col = ELEM_COLOR[el];
+    const sp = st.speed, el = c.elements.find((x) => x !== "Neutral") || "Neutral", col = elHex(el);
     const stage = $("#jxStage");
     if (cardEl && stage) {
       const r0 = cardEl.getBoundingClientRect(), fr = root.getBoundingClientRect();
@@ -1453,7 +1442,7 @@ export function mountJourney(root, legacy) {
         if (!await wait(380 / sp)) return;
       }
       if (ev.t === "enemyHex") {
-        popup(art, "Hex: " + ev.hex.text, "effect");
+        popup(art, "Hex: " + tt(hexText(ev.hex)), "effect");
         sfx.bell();
         if (!await wait(550 / sp)) return;
       }
@@ -1603,9 +1592,11 @@ export function mountJourney(root, legacy) {
       return true;
     },
     _state: st,
-    _newRun(seed, nation) {
+    _newRun(seed, opt) {
       if (!DEBUG) return false;
-      st.nation = nation || "water";
+      // A string is a legacy nation id; an object is { colours, sets, theme }.
+      st.nation = opt && typeof opt === "object" ? null : opt || "water";
+      st.newRunOpts = opt && typeof opt === "object" ? opt : null;
       startRun(seed);
       if (st.run.pending && st.run.pending.kind === "start") {
         takeStartCharm(st.run, 0);

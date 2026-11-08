@@ -40,7 +40,7 @@ export var NEUTRAL_THEME = {
     n_royal_guard: "soldier", n_jailer: "soldier", n_battle_mage: "bender", n_shade: "spirit", n_siege_kite: "machine", n_iron_golem: "machine",
     n_bombardier: "bender", n_eclipse_knight: "bender", n_twin_blades: "bender", n_ashen_king: "boss"
   },
-  text: { book: "Act", books: "Acts", element: "colour", surge: "Convergence", surgeHint: "White, Blue, Red and Green in one turn" },
+  text: { book: "Act", books: "Acts", element: "colour", surge: "Convergence", surgeHint: "White, Blue, Red and Green in one turn", victory: "The Ashen King falls" },
   names: {
     charm: { pai_sho_pro: "Practice Dummy", cabbage_cart: "Merchant's Cart", glider_staff: "Wind Staff", cosmic_fire: "Comet Shard" },
     offering: { mend: "Healing Draught", purify: "Cleansing Rite", tide_turn: "Turning Ink", focus: "Focus Stone" },

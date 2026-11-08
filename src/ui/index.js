@@ -9,6 +9,7 @@ export { PAIRS } from "../engine/colours.js";
 export { journeySets } from "../engine/sets.js";
 export { journeyOwnership, setupSets } from "../engine/ownership.js";
 export { CONTENT } from "../content.js";
+export { bookLabel, themeById, themeIds } from "../engine/themes.js";
 export { runBrief } from "../engine/run.js";
 export { readSavedRun } from "./run-store.js";
 export { initTips, resetTips, showTip } from "./tips.js";
