@@ -33,7 +33,7 @@ function printingChance(c){
 }
 const pct=(x,d=1)=>(x*100).toFixed(d)+'%';
 function renderOdds(){
-  const sp=x=>x.spec.src==='treat'?(TREAT_INFO[x.spec.sheet]?.label||x.spec.sheet):x.spec.src==='eternal'?'Eternal (TLE) reprint':x.spec.src==='allied'?'Common dual land':x.spec.src==='basic'?'Basic land':({C:'Common',U:'Uncommon',R:'Rare',M:'Mythic'})[x.r];
+  const sp=x=>x.spec.src==='treat'?(TREAT_INFO[x.spec.sheet]?.label||x.spec.sheet):x.spec.src==='eternal'?'Eternal (TLE) reprint':x.spec.src==='names'?'Common dual land':x.spec.src==='nums'?'Basic land':({C:'Common',U:'Uncommon',R:'Rare',M:'Mythic'})[x.r];
   document.getElementById('slotTable').innerHTML=SLOTS.map(s=>{
     const d=slotDist(s);
     return `<h3>${s.n>1?s.n+'× ':''}${s.label}${s.foil?' (always foil)':''}</h3><table>${d.map(x=>`<tr><td><span class="rdot" style="background:${RC[x.r]};box-shadow:0 0 0 1px #fff4"></span>${sp(x)}${x.spec.r&&x.spec.src==='treat'?' · '+x.spec.r:''}${x.foil&&!s.foil?' · foil':''}</td><td class="n">${pct(x.p,x.p<.01?2:1)}</td></tr>`).join('')}</table>`;

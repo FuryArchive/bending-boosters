@@ -1,8 +1,8 @@
 /* ================= Opening ================= */
-function openPack(){
+function openPack(code=MAIN_SET){
   const forceM = S.settings.pity>0 && S.since>=S.settings.pity-1;
   const out=[];
-  for(const slot of SLOTS) for(let i=0;i<slot.n;i++) out.push(rollSlot(slot, slot.id==='rare' && forceM));
+  for(const slot of slotsOf(code)) for(let i=0;i<slot.n;i++) out.push(rollSlot(slot, slot.id==='rare' && forceM, code));
   if(forceM) S.pityHits++;
   S.packs++; let gotM=false; const log=[]; let pv=0;
   for(const p of out){

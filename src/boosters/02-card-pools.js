@@ -1,59 +1,51 @@
 /* ================= Card pools ================= */
 const BASE=DATA.base, ETERN=DATA.eternal, TREAT=DATA.treat;
-const byName={}; BASE.forEach(c=>{ if(!byName[c.name]||c.r!=='L') byName[c.name]=c; });
-const allied=new Set(TREAT['allied lands'].map(x=>x.name));
-const TREAT_INFO={
-  'scene cards':{id:'scene',label:'Scene',cls:'bl'},
-  'field notes':{id:'field',label:'Field Notes',cls:'field'},
-  'battle pose':{id:'pose',label:'Battle Pose',cls:'pose'},
-  'elemental frame':{id:'elem',label:'Elemental Frame',cls:'elem'},
-  'borderless dfc saga':{id:'saga',label:'Borderless Saga',cls:'bl'},
-  'appa basic':{id:'appa',label:'Appa Full Art',cls:'bl'},
-  'avatar journey basic':{id:'journey',label:'Journey Full Art',cls:'bl'},
-};
-function treatCards(sheet){
-  const info=TREAT_INFO[sheet]||{};
-  return TREAT[sheet].map(t=>{
-    const b = (sheet.includes('basic')) ? BASE.find(c=>c.name===t.name&&c.r==='L') : byName[t.name];
+const TREAT_INFO=PKG[MAIN_SET].sheets; // special-version sheets: name -> {id,label,cls}
+// Per set: the base printing for each name (a non-land printing wins over a land).
+const NAMED={};
+function namedIn(code){
+  if(NAMED[code]) return NAMED[code];
+  const by={}; PKG[code].cards.base.forEach(c=>{ if(!by[c.name]||c.r!=='L') by[c.name]=c; });
+  return NAMED[code]=by;
+}
+const byName=namedIn(MAIN_SET);
+function treatCards(sheet,code=MAIN_SET){
+  const pk=PKG[code], info=pk.sheets[sheet]||{}, base=pk.cards.base, by=namedIn(code);
+  return pk.cards.treat[sheet].map(t=>{
+    const b = (sheet.includes('basic')) ? base.find(c=>c.name===t.name&&c.r==='L') : by[t.name];
     return Object.assign({},b,{num:t.num,artist:t.artist||b.artist,treat:info.id||null,base:b.num});
   });
 }
+// A pool spec (set.json products) names the cards one booster slot rolls from:
+//   {src:"base", r, exclSheet?}  base printings of rarity r, minus the names on exclSheet
+//   {src:"eternal"}              the set's Eternal printings
+//   {src:"names", sheet}         the base printings named on a sheet
+//   {src:"nums", sheet}          the base printings numbered on a sheet
+//   {src:"treat", sheet, r?}     a special-version sheet (only rarity r, when it has any)
 const pools={};
-function pool(spec){
-  const k=JSON.stringify(spec); if(pools[k]) return pools[k];
+function pool(spec,code=MAIN_SET){
+  const k=code+JSON.stringify(spec); if(pools[k]) return pools[k];
+  const cards=PKG[code].cards, base=cards.base, treat=cards.treat||{};
   let p;
-  if(spec.src==='base'){ p=BASE.filter(c=>c.r===spec.r && !(spec.excl&&allied.has(c.name))); }
-  else if(spec.src==='eternal'){ p=ETERN.map(c=>Object.assign({},c,{treat:'etern'})); }
-  else if(spec.src==='allied'){ p=TREAT['allied lands'].map(t=>byName[t.name]); }
-  else if(spec.src==='basic'){ p=TREAT['default basic'].map(t=>BASE.find(c=>c.num===t.num)); }
-  else { p=treatCards(spec.sheet); if(spec.r){ const f=p.filter(c=>c.r===spec.r); if(f.length) p=f; } }
+  if(spec.src==='base'){ const ex=spec.exclSheet?new Set(treat[spec.exclSheet].map(x=>x.name)):null; p=base.filter(c=>c.r===spec.r && !(ex&&ex.has(c.name))); }
+  else if(spec.src==='eternal'){ p=(cards.eternal||[]).map(c=>Object.assign({},c,{treat:'etern'})); }
+  else if(spec.src==='names'){ const by=namedIn(code); p=treat[spec.sheet].map(t=>by[t.name]); }
+  else if(spec.src==='nums'){ p=treat[spec.sheet].map(t=>base.find(c=>c.num===t.num)); }
+  else { p=treatCards(spec.sheet,code); if(spec.r){ const f=p.filter(c=>c.r===spec.r); if(f.length) p=f; } }
   return pools[k]=p;
 }
-/* Slot model — mirrors Forge's TLA booster definition */
-const T=(sheet,r,p)=>[p,{src:'treat',sheet,r}];
-const SPECIALS=(scale=1)=>[T('scene cards','R',.006*scale),T('scene cards','M',.004*scale),T('field notes','R',.006),T('field notes','M',.004),
-  T('battle pose','R',.001),T('battle pose','M',.0005),T('elemental frame','R',.001),T('elemental frame','M',.0005),T('borderless dfc saga','M',.0005)];
-const SLOTS=[
-  {id:'common',n:6,label:'Common',base:{src:'base',r:'C',excl:1},rep:[]},
-  {id:'cb',n:1,label:'Common / Eternal',base:{src:'base',r:'C'},rep:[[.0384,{src:'eternal'}]]},
-  {id:'unc',n:3,label:'Uncommon',base:{src:'base',r:'U'},rep:[T('scene cards','U',.036)]},
-  {id:'land',n:1,label:'Land',base:{src:'allied'},rep:[
-    [.20,{src:'basic'}],[.10,{src:'treat',sheet:'avatar journey basic'}],[.10,{src:'treat',sheet:'appa basic'}],
-    [.10,{src:'allied'},true],[.05,{src:'basic'},true],[.025,{src:'treat',sheet:'avatar journey basic'},true],[.025,{src:'treat',sheet:'appa basic'},true]]},
-  {id:'wild',n:1,label:'Wildcard',base:{src:'base',r:'U'},rep:[[.042,{src:'base',r:'C'}],[.167,{src:'base',r:'R'}],[.0026,{src:'base',r:'M'}],T('scene cards','U',.008),...SPECIALS()]},
-  {id:'foil',n:1,label:'Foil wildcard',foil:true,base:{src:'base',r:'C'},rep:[[.367,{src:'base',r:'U'}],[.067,{src:'base',r:'R'}],[.012,{src:'base',r:'M'}],T('scene cards','U',.008),...SPECIALS()]},
-  {id:'rare',n:1,label:'Rare / Mythic',base:{src:'base',r:'R'},rep:[[.126,{src:'base',r:'M'}],T('scene cards','R',.016),T('scene cards','M',.004),
-    T('field notes','R',.006),T('field notes','M',.004),T('battle pose','R',.001),T('battle pose','M',.0005),T('elemental frame','R',.001),T('elemental frame','M',.0005),T('borderless dfc saga','M',.0005)]},
-];
+/* Slot model: each set's Play Booster slots live in its set.json (products.play.slots). */
+const slotsOf=code=>PKG[code].products.play.slots;
+const SLOTS=slotsOf(MAIN_SET);
 
-function rollSlot(slot,forceMythic){
+function rollSlot(slot,forceMythic,code=MAIN_SET){
   let spec=slot.base, foil=!!slot.foil;
   if(forceMythic){ spec={src:'base',r:'M'}; }
   else {
     const x=rnd(); let acc=0;
     for(const [p,s,f] of slot.rep){ acc+=p; if(x<acc){ spec=s; if(f) foil=true; break; } }
   }
-  const c=pick(pool(spec));
+  const c=pick(pool(spec,code));
   return {c,foil,slot:slot.id};
 }
 function cardKey(c){ return c.set+':'+c.num; }
